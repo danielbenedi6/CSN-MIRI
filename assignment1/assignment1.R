@@ -1,4 +1,6 @@
 # Lab1: Reproduce the graphs that were introduced in the first lecture.
+#  Author:  Daniel Benedi Garcia
+#  Author:  Thomas Maria Frey
 library(igraph)
 
 #(a) plotting the clustering coefficient and the average shortest - path as a
@@ -48,7 +50,7 @@ average_path_length_ER <- function(n, p) {
   # If graph is not connected, calculate for the largest connected component
   if (!is.connected(g)) {
     g <- induced.subgraph(g, which.max(clusters(g)$csize))
-  } # TODO: Write this down in the report
+  }
   return(mean_distance(g, directed = FALSE))
 }
 
@@ -61,10 +63,11 @@ linear_seq <- seq(0, 1, length.out = n_steps)
 non_linear_seq <- linear_seq^power
 network_sizes <- round(1 + (max_nodes - 1) * non_linear_seq)
 
-# fixed probability
-#p <- 0.1  
-# Static p
-#avg_lengths <- sapply(network_sizes, function(n) average_path_length_ER(n, p))
+# Static p :  fixed probability
+p <- 0.1  
+avg_lengths <- sapply(network_sizes, function(n) average_path_length_ER(n, p))
+plot(network_sizes, avg_lengths, type="b", xlab="Number of Nodes", ylab="Average Shortest Path Length",
+     main=paste("ER model with p = 2*log(n)/n"))
 #Dynamic p
 avg_lengths <- sapply(network_sizes, function(n) average_path_length_ER(n, (2*log(n)/n) ))
 
