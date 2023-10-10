@@ -1,6 +1,8 @@
 #include "input.h"
 #include <fstream>
 #include <iostream>
+#include <sstream>
+#include <string>
 #include <unordered_map>
 
 bool read_file(std::string filename, Graph& g) {
@@ -10,16 +12,28 @@ bool read_file(std::string filename, Graph& g) {
         return false;
     }
 
-    int num_vertices = 0, max_vertices = 0, max_edges = 0;
+    int num_vertices = 0, num_edges = 0, max_vertices = 0, max_edges = 0;
     std::unordered_map<std::string,int> equivalence;
     file >> max_vertices >> max_edges;
+    file.get(); // Discard newline 
     
     while(!file.eof()) {
-        std::string vertex1, vertex2;
+        std::string vertex1, vertex2, line;
         int id1 = -1, id2 = -1;
         
         // Read label of both vertices
-        file >> vertex1 >> vertex2;
+        std::getline(file, line);
+        if(line == "")
+            break;
+        std::istringstream ss(line);
+        std::getline(ss, vertex1, ' ');
+        std::getline(ss, vertex2, ' ');
+        num_edges++;
+
+        // If self-loop, discard even before creating vertex
+        if(vertex1 == vertex2)
+            continue;
+        
 
         // Check if label already readed If so, use id. 
         // Otherwise, create new and assign
@@ -34,10 +48,8 @@ bool read_file(std::string filename, Graph& g) {
         }
         id2 = equivalence[vertex2];
 
-        // If no self-loop, add edge to graph g
-        if(id1 != id2) {
-            boost::add_edge(id1, id2, g);
-        }
+        // Add edge to graph g
+        boost::add_edge(id1, id2, g);
     }
 
     if(boost::num_vertices(g) != max_vertices) {
@@ -46,7 +58,7 @@ bool read_file(std::string filename, Graph& g) {
         return false;
     }
 
-    if(boost::num_edges(g) != max_edges) {
+    if(num_edges != max_edges) {
         std::cerr << "Wrong number of edges read. File may be corrupted!" << std::endl;
         std::cerr << "Expected: " << max_edges << ". Read: " << boost::num_edges(g) << std::endl;
         return false;
