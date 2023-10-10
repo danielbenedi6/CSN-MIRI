@@ -18,8 +18,8 @@ SRC_DIR = src
 BUILD_DIR = build
 TARGET = bin
 
-SOURCES = ${EXEC}.o
-OBJECTS = $(patsubst %.o,$(BUILD_DIR)/%.o,$(SOURCES))
+SOURCES = $(patsubst $(SRC_DIR)/%,%,$(wildcard $(SRC_DIR)/*.cpp))
+OBJECTS = $(patsubst %.cpp,$(BUILD_DIR)/%.o,$(SOURCES))
 
 #---------------------------------------------------------
 # flags
