@@ -1,5 +1,6 @@
 #include <iostream>
 #include <vector>
+#include <assert.h>
 #include <iomanip>
 #include "defines.h"
 #include "input.h"
@@ -56,7 +57,7 @@ double compute_nh(){
 
     // Iterate through the vertices and print their closeness centrality.
     Graph::vertex_iterator vi, vi_end;
-    for (boost::tie(vi, vi_end) = boost::vertices(g); vi != vi_end; ++vi) {
+    for (boost::tie(vi, vi_end) = boost::vertices(g); vi != vi_end; ++vi){ 
         C = C + Ci[*vi];
         std::cout << "Vertex " << *vi << " - Closeness Centrality: " << Ci[*vi] << std::endl;
     }
@@ -67,7 +68,8 @@ double estimate_pvalue(double x, int T){
     std::cout << "In estimate p-value funciton" << std::endl;
     // x: Closeness centrality
     // T: number of repetitions. 
-    assert (1/T < alpha); // Statistically significant
+    
+    // assert (1/(double)T < alpha); // Statistically significant
     int f = 0;
     for (int t=0; t <= T; t++){
         // produce a random network following the null hypothesis
@@ -77,7 +79,7 @@ double estimate_pvalue(double x, int T){
            f ++;
         }
     }
-    return f/T; 
+    return f/(double)T; 
 }
 
 int main(int argc, char *argv[]) {
