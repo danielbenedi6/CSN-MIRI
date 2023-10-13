@@ -9,15 +9,15 @@
 #include <boost/random.hpp>
 #include <boost/graph/closeness_centrality.hpp>
 #include <boost/graph/connected_components.hpp>
+#include <boost/graph/graphviz.hpp>
 
 // typedef boost::adjacency_list<boost::vecS, boost::vecS, boost::undirectedS> Graph;
 const double alpha = 0.05;
 
 double compute_nh(){
-    std::cout << "In compute nh function" << std::endl;
-    double C=0;
-    int N = 3;
-    int M = 4;
+    double C = 0;
+    int N = 3; // Number of vertices
+    int M = 3; // Number of edges
     Graph g(0);
 
     // Create a random number generator and seed it.
@@ -25,9 +25,11 @@ double compute_nh(){
     boost::mt19937 gen(random_seed);
 
     std::vector<int> component(N);
-    boost::generate_random_graph(g, N, M, gen);
+    boost::generate_random_graph(g, N, M, gen, false);
 
-    // Print the adjacency matrix.
+    // Sanity check: Print the adjacency matrix.
+    // boost::write_graphviz(std::cout, g); 
+    
     for (int i = 0; i < N; ++i) {
         for (int j = 0; j < N; ++j) {
             if (boost::edge(i, j, g).second) {
@@ -43,9 +45,12 @@ double compute_nh(){
     int num_components = boost::connected_components(g, &component[0]);
     assert(num_components == 1);
     std::vector<double> Ci(N);
+    
+    
     boost::closeness_centrality(g, 
                                 boost::make_iterator_property_map(Ci.begin(), 
-                                boost::get(boost::vertex_index, g)));
+                                    boost::get(boost::vertex_index, g))
+                                );
     /*
     double Ci;
     double C = 0;
@@ -61,7 +66,7 @@ double compute_nh(){
         C = C + Ci[*vi];
         std::cout << "Vertex " << *vi << " - Closeness Centrality: " << Ci[*vi] << std::endl;
     }
-    return C/N;
+    return C/(double)N;
 }
 
 double estimate_pvalue(double x, int T){
