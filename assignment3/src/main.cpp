@@ -14,7 +14,21 @@
 // typedef boost::adjacency_list<boost::vecS, boost::vecS, boost::undirectedS> Graph;
 const double alpha = 0.05;
 
-double manualClosenessCentrality(const Graph& g){
+void printAdjacencyMatrix(const Graph& g){
+    int N = boost::num_vertices(g);
+    for (int i = 0; i < N; ++i) {
+        for (int j = 0; j < N; ++j) {
+            if (boost::edge(i, j, g).second) {
+                std::cout << "1 ";
+            } else {
+                std::cout << "0 ";
+            }
+        }
+        std::cout << std::endl;
+    }
+}
+
+double computeClosenessCentrality(const Graph& g){
     std::vector<double> centrality(boost::num_vertices(g));
     double c = 0;
     for (int i = 0; i < centrality.size(); ++i){
@@ -29,7 +43,7 @@ double manualClosenessCentrality(const Graph& g){
     return c * 1/centrality.size();
 }
 
-double compute_nh(){
+Graph createRandomGraph(int n, int m){
     int N = 3; // Number of vertices
     int M = 3; // Number of edges
     Graph g(0);
@@ -40,40 +54,12 @@ double compute_nh(){
 
     std::vector<int> component(N);
     boost::generate_random_graph(g, N, M, gen, false);
-
-    // Sanity check: Print the adjacency matrix.
-    // boost::write_graphviz(std::cout, g); 
     
-    for (int i = 0; i < N; ++i) {
-        for (int j = 0; j < N; ++j) {
-            if (boost::edge(i, j, g).second) {
-                std::cout << "1 ";
-            } else {
-                std::cout << "0 ";
-            }
-        }
-        std::cout << std::endl;
-   }
-
-
-    int num_components = boost::connected_components(g, &component[0]);
-    assert(num_components == 1);
-    
-    double C = manualClosenessCentrality(g);
-    /*
-    double Ci;
-    double C = 0;
-    for (int i=0; i <= N ; i++){
-        Ci = 1/(N-1);
-        C = C+Ci;
-    }
-    */
-    std::cout << C << std::endl;
-    // Iterate through the vertices and print their closeness centrality.
-    return C;
+    return g;
 }
 
-double estimate_pvalue(double x, int T){
+
+double estimate_pvalue(double x, int T, int N, int M){
     // x: Closeness centrality
     // T: number of repetitions. 
     
@@ -81,8 +67,9 @@ double estimate_pvalue(double x, int T){
     int f = 0;
     for (int t = 0; t < T; t++){
         // produce a random network following the null hypothesis
+        Graph g = createRandomGraph(N, M);
         // Calculate x_NH on that network
-        double x_nh = compute_nh();
+        double x_nh = computeClosenessCentrality(g);
         if (x_nh >= x){
            f ++;
         }
@@ -120,8 +107,10 @@ int main(int argc, char *argv[]) {
     // ****
     // Estimation of p-value via MC method (fraom class slides, 9 of 29)
     // ****
+    int N = 3;
+    int E = 3;
     int T = 1;
-    double p_val = estimate_pvalue(2, T);
+    double p_val = estimate_pvalue(2, T, N, E);
 
     return 0;
 }
