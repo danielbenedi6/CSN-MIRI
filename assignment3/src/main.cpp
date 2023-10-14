@@ -14,8 +14,22 @@
 // typedef boost::adjacency_list<boost::vecS, boost::vecS, boost::undirectedS> Graph;
 const double alpha = 0.05;
 
+double manualClosenessCentrality(const Graph& g){
+    std::vector<double> centrality(boost::num_vertices(g));
+    double c = 0;
+    for (int i = 0; i < centrality.size(); ++i){
+        double ci = 0;
+        for (int j = 0; j < centrality.size(); ++j){
+            int di = boost::degree(j, g);
+            ci = ci + di;
+        }
+        c = ci * 1/(centrality.size()-1); 
+    }
+
+    return c * 1/centrality.size();
+}
+
 double compute_nh(){
-    double C = 0;
     int N = 3; // Number of vertices
     int M = 3; // Number of edges
     Graph g(0);
@@ -44,13 +58,8 @@ double compute_nh(){
 
     int num_components = boost::connected_components(g, &component[0]);
     assert(num_components == 1);
-    std::vector<double> Ci(N);
     
-    
-    boost::closeness_centrality(g, 
-                                boost::make_iterator_property_map(Ci.begin(), 
-                                    boost::get(boost::vertex_index, g))
-                                );
+    double C = manualClosenessCentrality(g);
     /*
     double Ci;
     double C = 0;
@@ -59,24 +68,18 @@ double compute_nh(){
         C = C+Ci;
     }
     */
-
+    std::cout << C << std::endl;
     // Iterate through the vertices and print their closeness centrality.
-    Graph::vertex_iterator vi, vi_end;
-    for (boost::tie(vi, vi_end) = boost::vertices(g); vi != vi_end; ++vi){ 
-        C = C + Ci[*vi];
-        std::cout << "Vertex " << *vi << " - Closeness Centrality: " << Ci[*vi] << std::endl;
-    }
-    return C/(double)N;
+    return C;
 }
 
 double estimate_pvalue(double x, int T){
-    std::cout << "In estimate p-value funciton" << std::endl;
     // x: Closeness centrality
     // T: number of repetitions. 
     
     // assert (1/(double)T < alpha); // Statistically significant
     int f = 0;
-    for (int t=0; t <= T; t++){
+    for (int t = 0; t < T; t++){
         // produce a random network following the null hypothesis
         // Calculate x_NH on that network
         double x_nh = compute_nh();
@@ -117,7 +120,7 @@ int main(int argc, char *argv[]) {
     // ****
     // Estimation of p-value via MC method (fraom class slides, 9 of 29)
     // ****
-    int T=5;
+    int T = 1;
     double p_val = estimate_pvalue(2, T);
 
     return 0;
