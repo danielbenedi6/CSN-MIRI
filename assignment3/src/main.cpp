@@ -52,18 +52,16 @@ Graph createRandomGraph(int n, int m){
     unsigned int random_seed = 42;
     boost::mt19937 gen(random_seed);
 
-    std::vector<int> component(N);
     boost::generate_random_graph(g, N, M, gen, false);
     
     return g;
 }
 
 
-double estimate_pvalue(double x, int T, int N, int M){
+double estimate_pvalue_binomial(double x, int T, int N, int M){
     // x: Closeness centrality
     // T: number of repetitions. 
     
-    // assert (1/(double)T < alpha); // Statistically significant
     int f = 0;
     for (int t = 0; t < T; t++){
         // produce a random network following the null hypothesis
@@ -75,6 +73,28 @@ double estimate_pvalue(double x, int T, int N, int M){
         }
     }
     return f/(double)T; 
+}
+
+double estimate_pvalue_degree_sequence(std::vector<int> deg_sequence, int T){
+    int f = 0;
+
+    // Use handshaking lemma to find number of vertices
+    int E = 0.5*std::accumulate(deg_sequence.begin(), deg_sequence.end(), 0);
+
+    // We must ensure connectivity to recreate a graph that could be a linguistic network
+    Graph g(deg_sequence.size());
+    bool connected = true;
+    int i = 0;
+    /***
+    while(connected and i < deg_sequence.size()){
+        for (int j = 0; j < deg_sequence[i]; ++j){
+            // Connect the highest degree d to the next d vertices
+            boost::add_edge(g, i, 0);
+        }
+        i++; 
+    }
+    */
+    return f/(double)T;
 }
 
 int main(int argc, char *argv[]) {
@@ -96,6 +116,10 @@ int main(int argc, char *argv[]) {
         // Maybe write to file?
         int N = boost::num_vertices(g),
             E = boost::num_edges(g);
+        std::vector<int> deg_sequence(N);
+        for(int i = 0; i < deg_sequence.size(); ++i){
+            deg_sequence[i] = boost::degree(i, g);
+        }
         std::cout << argv[i] << ";" << std::endl <<
                      "Number of vertices (N): " << N << ";" << std::endl <<
                      "Number of edges (E): " << E << ";" << std::setprecision(7) << std::endl <<
@@ -109,8 +133,13 @@ int main(int argc, char *argv[]) {
     // ****
     int N = 3;
     int E = 3;
+    std::vector<int> deg_sequence = {2, 2, 1}; 
+
     int T = 1;
-    double p_val = estimate_pvalue(2, T, N, E);
+    // assert (1/(double)T < alpha); // Statistically significant
+    
+    // double p_val = estimate_pvalue_binomial(2, T, N, E);
+    double p_val = estimate_pvalue_degree_sequence(deg_sequence, T);
 
     return 0;
 }
