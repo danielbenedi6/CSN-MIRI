@@ -22,7 +22,7 @@ double exactClosenessCentrality(const Graph& g){
 	#pragma omp parallel for reduction(+ : c)
 	for (int i = 0; i < N; ++i){
         for (int j = i+1; j < N; ++j){
-            c += D[i][j];
+            c += 1.0 / (double)D[i][j];
         }
     }
 
