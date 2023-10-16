@@ -1,21 +1,17 @@
 #include <iostream>
-#include <vector>
 #include <assert.h>
 #include <iomanip>
-#include <random>
+#include <numeric>
 #include "defines.h"
 #include "input.h"
-#include <boost/graph/random.hpp>
-#include <boost/graph/adjacency_list.hpp>
-#include <boost/random.hpp>
-#include <boost/graph/closeness_centrality.hpp>
-#include <boost/graph/connected_components.hpp>
-#include <boost/graph/graphviz.hpp>
-#include <boost/graph/johnson_all_pairs_shortest.hpp>
+#include "random_graph.h"
+#include "metrics.h"
 
-// typedef boost::adjacency_list<boost::vecS, boost::vecS, boost::undirectedS> Graph;
-const double alpha = 0.05;
-
+/**
+ * @brief Prints the Adjacency Matrix of the graph
+ * 
+ * @param g Input graph
+ */
 void printAdjacencyMatrix(const Graph& g){
     int N = boost::num_vertices(g);
     for (int i = 0; i < N; ++i) {
@@ -31,77 +27,48 @@ void printAdjacencyMatrix(const Graph& g){
     std::cout << std::endl;
 }
 
-double computeClosenessCentrality(const Graph& g){
-	std::vector<std::vector<int>> D(boost::num_vertices(g), std::vector<int>(boost::num_vertices(g)));
-	
-	auto weight_map = boost::make_constant_property<Graph::edge_descriptor>(1);
-
-	bool success = boost::johnson_all_pairs_shortest_paths(
-					g,
-					D, 
-					boost::weight_map(weight_map)
-				   );
-	if(!success) {
-		std::cerr << "This sould  not happenn!" << std::endl;
-		return 0.0;
-	}
-	
-	const int N = boost::num_vertices(g);
-    double c = 0;
-	#pragma omp parallel for reduction(+ : c)
-	for (int i = 0; i < N; ++i){
-        for (int j = i+1; j < N; ++j){
-            c += D[i][j];
-        }
-    }
-
-    return 2.0 * c / (double)(N*(N-1));
-}
-
-double mcClosenessCentrality(const Graph& g) {
-	return  0.0;
-}
-
-Graph createRandomGraph(int n, int m){
-    Graph g(0);
-
-    // Create a random number generator and seed it.
-	// Seed with a real random value, if available
-	// Use static variables in order to avoid initialization
-	// every time, because it is very expensive
-    static std::random_device r;
-    static boost::mt19937 gen(r());
-
-    boost::generate_random_graph(g, n, m, gen, false);
-    
-    return g;
-}
-
-
+/**
+ * @brief Estimates the p-value of the closeness centrality x
+ *        using T repetitions of a binomial graph with N vertices
+ *        and M edges.
+ * 
+ * @param x         Closeness Centrality of the hypothesis
+ * @param T         Number of repetitions of the montecarlo estimation
+ * @param N         Number of vertices in the graph
+ * @param M         Number of edges in the graph
+ * @return double   p-value of the null-hypothesis x_NH >= x
+ */
 double estimate_pvalue_binomial(double x, int T, int N, int M){
-    // x: Closeness centrality
-    // T: number of repetitions. 
     
     int f = 0;
     for (int t = 0; t < T; t++){
         // produce a random network following the null hypothesis
-        Graph g = createRandomGraph(N, M);
+        Graph g = createRandomBinomialGraph(N, M);
         // Calculate x_NH on that network
-        double x_nh = computeClosenessCentrality(g);
+        double x_nh = exactClosenessCentrality(g);
 		std::cout << x_nh << " " << std::flush;
         if (x_nh >= x){
-           f ++;
+           f++;
         }
     }
 	std::cout << std::endl;
     return (double)f/(double)T; 
 }
 
+/**
+ * @brief Estimates the p-value of the closeness centrality x
+ *        using T repetitions of a graph using the switching
+ *        model given the degree sequence
+ * 
+ * @param deg_sequence  Degree sequence
+ * @param T             Number of repetitions 
+ * @return double       p-value of the null-hypothesis x_NH >= x
+ */
 double estimate_pvalue_degree_sequence(std::vector<int> deg_sequence, int T){
     int f = 0;
 
     // Use handshaking lemma to find number of vertices
-    int E = 0.5*std::accumulate(deg_sequence.begin(), deg_sequence.end(), 0);
+    int E = std::accumulate(deg_sequence.begin(), deg_sequence.end(), 0)/2;
 
     // We must ensure connectivity to recreate a graph that could be a linguistic network
     Graph g(deg_sequence.size());
@@ -147,7 +114,7 @@ int main(int argc, char *argv[]) {
                      "Number of edges (E): " << E << ";" << std::setprecision(7) << std::endl <<
                      "Mean degree (k): " << 2.*double(E)/double(N) << ";" << std::setprecision(7) << std::endl <<
                      "Density of edfes (delta): " << 2.*double(E)/double(N*(N-1)) << std::endl;
-		double C = computeClosenessCentrality(g);
+		double C = exactClosenessCentrality(g);
 		std::cout << "Closeness Centrality: " << C << std::endl;
 
 		double p_val_bin = estimate_pvalue_binomial(C, 10, N, E);

@@ -1,7 +1,12 @@
 #pragma once
 
+#include <vector>
+#include <utility>
+
 #include "boost/graph/adjacency_list.hpp"
 #include "boost/graph/graph_traits.hpp"
+
+const double alpha = 0.05;
 
 typedef boost::property<boost::edge_weight_t, int> EdgeWeightProperty;
 
