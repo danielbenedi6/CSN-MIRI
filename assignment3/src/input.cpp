@@ -66,3 +66,4 @@ bool read_file(std::string filename, Graph& g) {
 
     return true;
 }
+

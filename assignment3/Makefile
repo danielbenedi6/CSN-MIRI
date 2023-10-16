@@ -23,8 +23,8 @@ OBJECTS = $(patsubst %.cpp,$(BUILD_DIR)/%.o,$(SOURCES))
 
 #---------------------------------------------------------
 # flags
-#CPPFLAGS = -std=gnu++17 -O3 -fopenmp
-CPPFLAGS = -std=gnu++17 -O0 -g -fsanitize=address -DDEBUG
+CPPFLAGS = -std=gnu++17 -O3 -fopenmp
+#CPPFLAGS = -std=gnu++17 -O0 -g -fsanitize=address -DDEBUG
 
 all: $(EXEC)
 #---------------------------------------------------------

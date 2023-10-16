@@ -2,6 +2,7 @@
 #include <vector>
 #include <assert.h>
 #include <iomanip>
+#include <random>
 #include "defines.h"
 #include "input.h"
 #include <boost/graph/random.hpp>
@@ -10,6 +11,7 @@
 #include <boost/graph/closeness_centrality.hpp>
 #include <boost/graph/connected_components.hpp>
 #include <boost/graph/graphviz.hpp>
+#include <boost/graph/johnson_all_pairs_shortest.hpp>
 
 // typedef boost::adjacency_list<boost::vecS, boost::vecS, boost::undirectedS> Graph;
 const double alpha = 0.05;
@@ -26,33 +28,51 @@ void printAdjacencyMatrix(const Graph& g){
         }
         std::cout << std::endl;
     }
+    std::cout << std::endl;
 }
 
 double computeClosenessCentrality(const Graph& g){
-    std::vector<double> centrality(boost::num_vertices(g));
+	std::vector<std::vector<int>> D(boost::num_vertices(g), std::vector<int>(boost::num_vertices(g)));
+	
+	auto weight_map = boost::make_constant_property<Graph::edge_descriptor>(1);
+
+	bool success = boost::johnson_all_pairs_shortest_paths(
+					g,
+					D, 
+					boost::weight_map(weight_map)
+				   );
+	if(!success) {
+		std::cerr << "This sould  not happenn!" << std::endl;
+		return 0.0;
+	}
+	
+	const int N = boost::num_vertices(g);
     double c = 0;
-    for (int i = 0; i < centrality.size(); ++i){
-        double ci = 0;
-        for (int j = 0; j < centrality.size(); ++j){
-            int di = boost::degree(j, g);
-            ci = ci + di;
+	#pragma omp parallel for reduction(+ : c)
+	for (int i = 0; i < N; ++i){
+        for (int j = i+1; j < N; ++j){
+            c += D[i][j];
         }
-        c = ci * 1/(centrality.size()-1); 
     }
 
-    return c * 1/centrality.size();
+    return 2.0 * c / (double)(N*(N-1));
+}
+
+double mcClosenessCentrality(const Graph& g) {
+	return  0.0;
 }
 
 Graph createRandomGraph(int n, int m){
-    int N = 3; // Number of vertices
-    int M = 3; // Number of edges
     Graph g(0);
 
     // Create a random number generator and seed it.
-    unsigned int random_seed = 42;
-    boost::mt19937 gen(random_seed);
+	// Seed with a real random value, if available
+	// Use static variables in order to avoid initialization
+	// every time, because it is very expensive
+    static std::random_device r;
+    static boost::mt19937 gen(r());
 
-    boost::generate_random_graph(g, N, M, gen, false);
+    boost::generate_random_graph(g, n, m, gen, false);
     
     return g;
 }
@@ -68,11 +88,13 @@ double estimate_pvalue_binomial(double x, int T, int N, int M){
         Graph g = createRandomGraph(N, M);
         // Calculate x_NH on that network
         double x_nh = computeClosenessCentrality(g);
+		std::cout << x_nh << " " << std::flush;
         if (x_nh >= x){
            f ++;
         }
     }
-    return f/(double)T; 
+	std::cout << std::endl;
+    return (double)f/(double)T; 
 }
 
 double estimate_pvalue_degree_sequence(std::vector<int> deg_sequence, int T){
@@ -125,7 +147,11 @@ int main(int argc, char *argv[]) {
                      "Number of edges (E): " << E << ";" << std::setprecision(7) << std::endl <<
                      "Mean degree (k): " << 2.*double(E)/double(N) << ";" << std::setprecision(7) << std::endl <<
                      "Density of edfes (delta): " << 2.*double(E)/double(N*(N-1)) << std::endl;
+		double C = computeClosenessCentrality(g);
+		std::cout << "Closeness Centrality: " << C << std::endl;
 
+		double p_val_bin = estimate_pvalue_binomial(C, 10, N, E);
+		std::cout << "p-value (binomial): " << p_val_bin << std::endl;
     }
 
     // ****
