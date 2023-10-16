@@ -7,6 +7,9 @@
 #include "random_graph.h"
 #include "metrics.h"
 
+//TODO: switching model
+//TODO: do experiments
+
 /**
  * @brief Prints the Adjacency Matrix of the graph
  * 
@@ -64,6 +67,41 @@ double estimate_pvalue_binomial(double x, int T, int N, int M){
  * @param T             Number of repetitions 
  * @return double       p-value of the null-hypothesis x_NH >= x
  */
+
+void switching_model(int Q, list_t& lst){
+    unsigned int nb_edges = lst.size();
+    
+    // Defines a function that give a random edge.
+    std::uniform_int_distribution<int> get_rand_edge(0, nb_edges - 1);
+    
+    // Shuffles the edges, with the condition of not creating multiple edges or self-loops.
+    unsigned int nb_edge_swaps(0);
+    
+    while(nb_edge_swaps < Q*E)
+    {
+        auto e1 = nth_edge(lst, get_rand_edge(engine));
+        auto v1 = e1->s;
+        auto v2 = e1->t;
+    
+        auto e2 = nth_edge(lst, get_rand_edge(engine));
+        auto v3 = e2->s;
+        auto v4 = e2->t;
+    
+        // Avoids self-loops.
+        // Avoids multiple edge.
+        if ((v1 == v3) || (v2 == v4) || lst.count({v1,v3}) || lst.count({v2,v4}))
+            continue;
+    
+        // swap edges
+        edge_list_detail::erase_two(lst, e1, e2);
+        lst.emplace(v1, v3);
+        lst.emplace(v2, v4);
+    
+        // Counts the number of changes.
+        ++nb_edge_swaps;
+    }                          
+}
+
 double estimate_pvalue_degree_sequence(std::vector<int> deg_sequence, int T){
     int f = 0;
 
@@ -83,7 +121,7 @@ double estimate_pvalue_degree_sequence(std::vector<int> deg_sequence, int T){
         i++; 
     }
     */
-    return f/(double)T;
+    return (double)f/(double)T;
 }
 
 int main(int argc, char *argv[]) {
