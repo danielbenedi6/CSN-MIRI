@@ -44,22 +44,25 @@ double montecarloClosenessCentrality(const Graph& g, int T, double delta) {
     static std::random_device r;
     static std::mt19937 gen(r());
 
-    std::vector<int> vertices(boost::num_vertices(g));
     boost::integer_range<int> range(0, boost::num_vertices(g));
-    std::copy(range.begin(), range.end(), vertices.begin());
-
+    #pragma omp parallel for reduction( + : C )
     for(int rep = 0; rep < T; rep++) {
         double Cprime = 0.;
+
+        std::vector<int> vertices(boost::num_vertices(g));
+        std::copy(range.begin(), range.end(), vertices.begin());
         std::shuffle(vertices.begin(), vertices.end(), gen);
 
         // Initialize should_save so the first Nprime vertices are saved
         std::vector<bool> should_save(boost::num_vertices(g), false);
         for(int j = 0; j < Nprime; j++)
             should_save[vertices[j]] = true;
+
+        #pragma omp parallel for reduction(+ : Cprime)
         for(int i = 0; i < Nprime; i++) {
             // From 0 to i should not be saved because we can multiply by two
             // So we can simply set the i-th to false
-            should_save[vertices[i]] = false;
+            // should_save[vertices[i]] = false;
 
             std::queue<std::pair<int,int>> Q;
             Q.push({vertices[i],0});
@@ -83,7 +86,7 @@ double montecarloClosenessCentrality(const Graph& g, int T, double delta) {
             }
             
             for(auto vertex_time : distance) {
-                Cprime += 2.0 / (double)vertex_time.second;
+                Cprime += 1.0 / (double)vertex_time.second;
             }
         }
 
