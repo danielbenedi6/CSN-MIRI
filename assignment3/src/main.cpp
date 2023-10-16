@@ -113,7 +113,9 @@ int main(int argc, char *argv[]) {
                      "Number of vertices (N): " << N << ";" << std::endl <<
                      "Number of edges (E): " << E << ";" << std::setprecision(7) << std::endl <<
                      "Mean degree (k): " << 2.*double(E)/double(N) << ";" << std::setprecision(7) << std::endl <<
-                     "Density of edfes (delta): " << 2.*double(E)/double(N*(N-1)) << std::endl;
+                     "Density of edges (delta): " << 2.*double(E)/double(N*(N-1)) << std::endl;
+		double C2 = montecarloClosenessCentrality(g, 1, 0.1);
+		std::cout << "Montecarlo Closeness Centrality: " << C2 << std::endl;
 		double C = exactClosenessCentrality(g);
 		std::cout << "Closeness Centrality: " << C << std::endl;
 
