@@ -44,17 +44,17 @@ void printAdjacencyMatrix(const Graph& g){
 double estimate_pvalue_binomial(double x, int T, int N, int M){
     
     int f = 0;
+    #pragma omp parallel for reduction( + : f)
     for (int t = 0; t < T; t++){
         // produce a random network following the null hypothesis
         Graph g = createRandomBinomialGraph(N, M);
         // Calculate x_NH on that network
         double x_nh = montecarloClosenessCentrality(g, 1, 0.1);
-		std::cout << x_nh << " " << std::flush;
-        if (x_nh >= x){
-           f++;
-        }
+		//std::cout << x_nh << " " << std::flush;
+        
+        f += x_nh >= x;
     }
-	std::cout << std::endl;
+	//std::cout << std::endl;
     return (double)f/(double)T; 
 }
 
@@ -153,7 +153,7 @@ int main(int argc, char *argv[]) {
                      "Mean degree (k): " << 2.*double(E)/double(N) << ";" << std::setprecision(7) << std::endl <<
                      "Density of edges (delta): " << 2.*double(E)/double(N*(N-1)) << std::endl;
 		
-        double C = montecarloClosenessCentrality(g, 1, 0.1);
+        double C = montecarloClosenessCentrality(g, 3, 0.1);
 		std::cout << "Montecarlo Closeness Centrality: " << C << std::endl;
 		//double C = exactClosenessCentrality(g);
 		//std::cout << "Closeness Centrality: " << C << std::endl;
