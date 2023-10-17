@@ -1,6 +1,7 @@
 #include "metrics.h"
 #include <algorithm>
 #include <iostream>
+#include <fstream>
 #include <queue>
 #include <random>
 #include <unordered_map>
@@ -33,7 +34,7 @@ double exactClosenessCentrality(const Graph& g){
     return 2.0 * c / (double)(N*(N-1));
 }
 
-double montecarloClosenessCentrality(const Graph& g, int T, double delta) {
+double montecarloClosenessCentrality(const Graph& g, int T, double delta, std::string filename) {
     const int Nprime = std::max(2,(int)(delta*boost::num_vertices(g)));
     double C = 0.;
 
@@ -44,8 +45,10 @@ double montecarloClosenessCentrality(const Graph& g, int T, double delta) {
     static std::random_device r;
     static std::mt19937 gen(r());
 
+    std::vector<double> CPRIME(T, 0.0);
+
     boost::integer_range<int> range(0, boost::num_vertices(g));
-    #pragma omp parallel for reduction( + : C )
+    #pragma omp parallel for reduction( + : C)
     for(int rep = 0; rep < T; rep++) {
         double Cprime = 0.;
 
@@ -92,8 +95,15 @@ double montecarloClosenessCentrality(const Graph& g, int T, double delta) {
 
         Cprime /= (double)(Nprime*(Nprime-1));
 
+        CPRIME[rep] = Cprime;
+
         C += Cprime;
     }
+
+    std::ofstream out(filename + ".csv");
+    for(int t = 0; t < T; t++)
+        out << CPRIME[t] << std::endl;
+    out.close();
 
 	return  C/(double)T;
 }

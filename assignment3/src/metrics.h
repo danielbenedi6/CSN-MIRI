@@ -18,7 +18,7 @@ double exactClosenessCentrality(const Graph& g);
  * @param delta     Percentage of vertices to take into account. 0 <= delta <= 1
  * @return double   Closeness Centrality
  */
-double montecarloClosenessCentrality(const Graph& g, int T, double delta);
+double montecarloClosenessCentrality(const Graph& g, int T, double delta, std::string filename);
 
 /**
  * @brief Returns a lower and upper bound of the closeness centrality

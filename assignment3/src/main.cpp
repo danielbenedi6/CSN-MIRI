@@ -2,6 +2,8 @@
 #include <assert.h>
 #include <iomanip>
 #include <numeric>
+#include <fstream>
+#include <omp.h>
 #include "defines.h"
 #include "input.h"
 #include "random_graph.h"
@@ -11,10 +13,12 @@
 #include <boost/graph/adjacency_list.hpp>
 #include <boost/graph/depth_first_search.hpp>
 #include <boost/graph/visitors.hpp>
-// typedef boost::adjacency_list<boost::vecS, boost::vecS, boost::undirectedS> Graph;
 
-//TODO: switching model
-//TODO: do experiments
+const std::string header_table_1 = "\\begin{table}[!htp]\n\\centering\n\\resizebox{\\columnwidth}{!}{\n\\begin{tabular}{lllll}\nLanguage & N & E & $\\langle k \\rangle$ & $\\delta$ \\\\ \\hline\n";
+const std::string header_table_2 = "\\begin{table}[!htp]\n\\centering\n\\resizebox{\\columnwidth}{!}{\n\\begin{tabular}{llll}\nLanguage & Metric & $p$-value (binomial) & $p$-value (switching) \\\\ \\hline\n";
+
+const std::string end_table_1 = "\\end{tabular}}\n\\label{tab:summary}\n\\caption{Summary of the properties of the degree sequences.}\n\\end{table}";
+const std::string end_table_2 = "\\end{tabular}}\n\\label{tab:hypothesis}\n\\caption{Estimation of the $p$-values of the hypothesis $\\mathcal{C}_{NH} \\geq \\mathcal{C}$}\n\\end{table}";
 
 /**
  * @brief Prints the Adjacency Matrix of the graph
@@ -47,7 +51,8 @@ void printAdjacencyMatrix(const Graph& g){
  * @param M         Number of edges in the graph
  * @return double   p-value of the null-hypothesis x_NH >= x
  */
-double estimate_pvalue_binomial(double x, int T, int N, int M){
+double estimate_pvalue_binomial(double x, int T, int N, int M, std::string filename){
+    std::vector<double> X_NH(T, 0.);
     
     int f = 0;
     #pragma omp parallel for reduction( + : f)
@@ -55,11 +60,19 @@ double estimate_pvalue_binomial(double x, int T, int N, int M){
         // produce a random network following the null hypothesis
         Graph g = createRandomBinomialGraph(N, M);
         // Calculate x_NH on that network
-        double x_nh = montecarloClosenessCentrality(g, 1, 0.1);
+        double x_nh = montecarloClosenessCentrality(g, 5, 0.1, filename + "_closeness");
 		//std::cout << x_nh << " " << std::flush;
-        
+
+        X_NH[t] = x_nh;
+
         f += x_nh >= x;
     }
+
+    std::ofstream out(filename + ".csv");
+    for(int t = 0; t < T; t++)
+        out << X_NH[t] << std::endl;
+    out.close();
+
 	//std::cout << std::endl;
     return (double)f/(double)T; 
 }
@@ -69,76 +82,34 @@ double estimate_pvalue_binomial(double x, int T, int N, int M){
  *        using T repetitions of a graph using the switching
  *        model given the degree sequence
  * 
- * @param deg_sequence  Degree sequence
-
- * @param T             Number of repetitions 
- * @return double       p-value of the null-hypothesis x_NH >= x
+ * @param graph     Input graph for degree sequence
+ * @param x         Closeness Centrality of the hypothesis
+ * @param Q         Number of repetitions of the switching model
+ * @param T         Number of repetitions of the montecarlo estimation
+ * @return double 
  */
-void switching_model(Graph& graph){
-    std::random_device rd;
-    std::mt19937 gen(rd());
-    std::uniform_int_distribution<int> edgeDist(0, boost::num_edges(graph) - 1);
+double estimate_pvalue_switching(const Graph& graph, double x, int Q, int T, std::string filename){
+    std::vector<double> X_NH(T, 0.);
 
-    // Choose two random edges
-    int edge1 = edgeDist(gen);
-    int edge2 = edgeDist(gen);
-    
-	Graph::edge_iterator edge_it1, edge_it2, edge_end;
-	std::tie(edge_it1,edge_end) = boost::edges(graph);
-	std::tie(edge_it2,edge_end) = boost::edges(graph);
-
-	for(int i = 0; i < edge1; i++)
-		edge_it1++;
-	for(int i = 0; i < edge2; i++)
-		edge_it2++;
-	
-	int u = edge_it1->m_source, v = edge_it1->m_target;
-	int s = edge_it2->m_source, t = edge_it2->m_target;
-	
-	std::cout << "edge(" << edge1 << ") = (" << u << ", " << v << ") "; 
-	std::cout << "edge(" << edge2 << ") = (" << s << ", " << t << ") " << std::endl; 
-
-	if( u == t || s == t) { // Discard to avoid self-loops
-		return;
-	}
-
-	if(boost::edge(u,t,graph).second || boost::edge(s,v,graph).second) { // Discard to avoid creating double edge
-		return;
-	}
-    
-	std::cout << "Swapping" << std::endl;
-    // Swap the selected vertices with their neighbors
-    boost::remove_edge(u, v, graph);
-    boost::remove_edge(s, t, graph);
-    boost::add_edge(u, t, graph);
-    boost::add_edge(s, v, graph);
-}
-double estimate_pvalue_degree_sequence(std::vector<int> deg_sequence, int T){
     int f = 0;
-    
-    /* IDEA:
-     * for each switch: pick two vertices from list at random.
-     * For both, pisck at random one of their neighbors (use boost::adjacency_list)
-     * switch the neighbors - aka make two wiritngs in adjacency list
-     */
+    #pragma omp parallel for reduction( + : f)
+    for (int t = 0; t < T; t++){
+        // produce a random network following the null hypothesis
+        Graph g = createSwitchingModel(graph, Q);
+        // Calculate x_NH on that network
+        double x_nh = montecarloClosenessCentrality(g, 5, 0.1, filename + "_closeness");
 
-    // Use handshaking lemma to find number of vertices
-    int E = std::accumulate(deg_sequence.begin(), deg_sequence.end(), 0)/2;
+        X_NH[t] = x_nh;
 
-    // We must ensure connectivity to recreate a graph that could be a linguistic network
-    Graph g(deg_sequence.size());
-    bool connected = true;
-    int i = 0;
-    /***
-    while(connected and i < deg_sequence.size()){
-        for (int j = 0; j < deg_sequence[i]; ++j){
-            // Connect the highest degree d to the next d vertices
-            boost::add_edge(g, i, 0);
-        }
-        i++; 
+        f += x_nh >= x;
     }
-    */
-    return (double)f/(double)T;
+
+    std::ofstream out(filename + ".csv");
+    for(int t = 0; t < T; t++)
+        out << X_NH[t] << std::endl;
+    out.close();
+
+    return (double)f/(double)T; 
 }
 
 int main(int argc, char *argv[]) {
@@ -148,57 +119,80 @@ int main(int argc, char *argv[]) {
         return 1;
     }
 
-    for(int i = 1; i < argc; i++){
-        Graph g;
-        if(!read_file(std::string(argv[i]), g)) {
-            return 1;
-        }
+    std::ofstream table1("./tables/summary.tex");
+    std::ofstream table2("./tables/hypothesis.tex");
 
-        // Graph is ready to use :D
-
-        // First print the language summary. 
-        // Maybe write to file?
-        int N = boost::num_vertices(g),
-            E = boost::num_edges(g);
-        std::vector<int> deg_sequence(N);
-        for(int i = 0; i < deg_sequence.size(); ++i){
-            deg_sequence[i] = boost::degree(i, g);
-        }
-        std::cout << argv[i] << ";" << std::endl <<
-                     "Number of vertices (N): " << N << ";" << std::endl <<
-                     "Number of edges (E): " << E << ";" << std::setprecision(7) << std::endl <<
-                     "Mean degree (k): " << 2.*double(E)/double(N) << ";" << std::setprecision(7) << std::endl <<
-                     "Density of edges (delta): " << 2.*double(E)/double(N*(N-1)) << std::endl;
-		
-        double C = montecarloClosenessCentrality(g, 3, 0.1);
-		std::cout << "Montecarlo Closeness Centrality: " << C << std::endl;
-		//double C = exactClosenessCentrality(g);
-		//std::cout << "Closeness Centrality: " << C << std::endl;
-
-		double p_val_bin = estimate_pvalue_binomial(C, 10, N, E);
-		std::cout << "p-value (binomial): " << p_val_bin << std::endl;
+    if(!table1.is_open() || !table2.is_open()) {
+        std::cerr << "Could not open files to write tables. Check that folder \"tables\" exists." << std::endl;
+        return 1;
     }
 
-    // ****
-    // Estimation of p-value via MC method (fraom class slides, 9 of 29)
-    // ****
-    int N = 3;
-    int E = 3;
-    
-    int T = 1;
-    // assert (1/(double)T < alpha); // Statistically significant
-    
-    // double p_val = estimate_pvalue_binomial(2, T, N, E);
-    // double p_val = estimate_pvalue_degree_sequence(deg_sequence, T);
-    
-    Graph tg(5);  // Create a graph with 5 vertices
-    // Add edges to the graph (example edges)
-    boost::add_edge(0, 1, tg);
-    boost::add_edge(0, 2, tg);
-    boost::add_edge(1, 3, tg);
-    boost::add_edge(2, 4, tg);
-    printAdjacencyMatrix(tg);
-    switching_model(tg);
-    printAdjacencyMatrix(tg);
+    table1 << header_table_1;
+    table2 << header_table_2;
+
+    for(int i = 1; i < argc; i++){
+        Graph g;
+        std::string file = std::string(argv[i]);
+        if(!read_file(file, g)) {
+            return 1;
+        }
+        const int N = boost::num_vertices(g);
+        const int E = boost::num_edges(g);
+
+        std::string language = "";
+        size_t pos = 0;
+        while ((pos = file.find("/")) != std::string::npos) {
+            language = file.substr(0, pos);
+            file.erase(0, pos + 1);
+        }
+        language = file;
+        language = language.substr(0, language.find("_"));
+
+        // Graph is ready to use :D
+        #ifdef DEBUG
+        std::cout << language << std::endl <<
+                     "Number of vertices (N): " << N << std::endl <<
+                     "Number of edges (E): " << E << std::endl <<
+                     "Mean degree (k): " << std::setprecision(7) << 2.*double(E)/double(N) << std::endl <<
+                     "Density of edges (delta): " << std::setprecision(7) << 2.*double(E)/double(N*(N-1)) << std::endl;
+        #endif
+
+        table1 << language << " & "
+               << N << " & "
+               << E << " & "
+               << std::setprecision(5) << 2.*double(E)/double(N) << " & "
+               << std::setprecision(5) << 2.*double(E)/double(N*(N-1));
+        if(i < argc-1) 
+            table1 << " \\\\ ";
+        table1 << std::endl;
+		
+        double C = montecarloClosenessCentrality(g, 5, 0.1, language + "_closeness");
+		double p_val_bin = estimate_pvalue_binomial(C, 100, N, E, language + "_binomial");
+		double p_val_sw = estimate_pvalue_switching(g, C, 1+(int)std::log(E), 100, language + "_switching");
+
+        #ifdef DEBUG
+		double exactC = exactClosenessCentrality(g);
+
+		std::cout << "Montecarlo Closeness Centrality: " << C << std::endl;
+		std::cout << "Closeness Centrality: " << exactC << std::endl;
+		std::cout << "p-value (binomial): " << p_val_bin << std::endl;
+		std::cout << "p-value (switching): " << p_val_sw << std::endl;
+        #endif
+
+        table2 << language << " & "
+               << std::setprecision(5) << C << " & "
+               << std::setprecision(5) << p_val_bin << " & "
+               << std::setprecision(5) << p_val_sw;
+        if(i < argc-1) 
+            table2 << " \\\\ ";
+        table2 << std::endl;
+    }
+
+    table1 << end_table_1;
+    table2 << end_table_2;
+
+    table1.close();
+    table2.close();
+
     return 0;
 }
