@@ -11,3 +11,5 @@
  * @return Graph    Random graph
  */
 Graph createRandomBinomialGraph(int n, int m);
+
+Graph createSwitchingModel(const Graph& graph, int Q);
