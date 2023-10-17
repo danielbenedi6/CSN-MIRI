@@ -77,51 +77,41 @@ double estimate_pvalue_binomial(double x, int T, int N, int M){
 void switching_model(Graph& graph){
     std::random_device rd;
     std::mt19937 gen(rd());
-    std::uniform_int_distribution<int> vertexDist(0, num_vertices(graph) - 1);
+    std::uniform_int_distribution<int> edgeDist(0, boost::num_edges(graph) - 1);
 
-    // Choose two random vertices
-    int vertex1 = vertexDist(gen);
-    int vertex2 = vertexDist(gen);
+    // Choose two random edges
+    int edge1 = edgeDist(gen);
+    int edge2 = edgeDist(gen);
     
-    std::vector<int> neighbors1, neighbors2;
-    // Choose a random neighbor for each vertex
-    boost::graph_traits<Graph>::adjacency_iterator adjIt, adjEnd;
-    for (boost::tie(adjIt, adjEnd) = boost::adjacent_vertices(vertex1, graph); adjIt != adjEnd; ++adjIt) {
-        neighbors1.push_back(*adjIt);
-    }
-    for (boost::tie(adjIt, adjEnd) = boost::adjacent_vertices(vertex2, graph); adjIt != adjEnd; ++adjIt) {
-        neighbors2.push_back(*adjIt);
-    }
-    
-    // Since linguistic networks are always one giant connected ci¡omponent, tihis should never happen
-    if (neighbors1.empty() || neighbors2.empty()) {
-        std::cerr << "One of the selected vertices has no neighbors." << std::endl;
-        return;
-    }
+	Graph::edge_iterator edge_it1, edge_it2, edge_end;
+	std::tie(edge_it1,edge_end) = boost::edges(graph);
+	std::tie(edge_it2,edge_end) = boost::edges(graph);
 
-    std::uniform_int_distribution<int> neighborDist1(0, neighbors1.size() - 1);
-    std::uniform_int_distribution<int> neighborDist2(0, neighbors2.size() - 1);
+	for(int i = 0; i < edge1; i++)
+		edge_it1++;
+	for(int i = 0; i < edge2; i++)
+		edge_it2++;
+	
+	int u = edge_it1->m_source, v = edge_it1->m_target;
+	int s = edge_it2->m_source, t = edge_it2->m_target;
+	
+	std::cout << "edge(" << edge1 << ") = (" << u << ", " << v << ") "; 
+	std::cout << "edge(" << edge2 << ") = (" << s << ", " << t << ") " << std::endl; 
 
-    int randomNeighbor1 = neighbors1[neighborDist1(gen)];
-    int randomNeighbor2 = neighbors2[neighborDist2(gen)];
-    
-    // bool r2Inv1 = areVerticesConnected(graph, vertex1, randomNeighbor2);
-    // bool r1Inv2 = areVerticesConnected(graph, vertex2, randomNeighbor1);
-    bool r2Inv1 = false; 
-    bool r1Inv2 = false; 
-    // if random neighbor 2 is in the adjacency list of vertex 2 (aka they are also neighbors)
-    // or random neighbor 1 is in the adjacency list of vertex 1 (aka they are also neighbors)
-    // we will NOT preserve the degree sequence - we will create a double edge -
-    
-    
+	if( u == t || s == t) { // Discard to avoid self-loops
+		return;
+	}
 
-    if(!r1Inv2 and !r2Inv1){
-        // Swap the selected vertices with their neighbors
-        boost::remove_edge(vertex1, randomNeighbor1, graph);
-        boost::remove_edge(vertex2, randomNeighbor2, graph);
-        boost::add_edge(vertex1, randomNeighbor2, graph);
-        boost::add_edge(vertex2, randomNeighbor1, graph);
-    }
+	if(boost::edge(u,t,graph).second || boost::edge(s,v,graph).second) { // Discard to avoid creating double edge
+		return;
+	}
+    
+	std::cout << "Swapping" << std::endl;
+    // Swap the selected vertices with their neighbors
+    boost::remove_edge(u, v, graph);
+    boost::remove_edge(s, t, graph);
+    boost::add_edge(u, t, graph);
+    boost::add_edge(s, v, graph);
 }
 double estimate_pvalue_degree_sequence(std::vector<int> deg_sequence, int T){
     int f = 0;
