@@ -6,6 +6,10 @@
 #include "input.h"
 #include "random_graph.h"
 #include "metrics.h"
+#include <random>
+
+#include <boost/graph/adjacency_list.hpp>
+// typedef boost::adjacency_list<boost::vecS, boost::vecS, boost::undirectedS> Graph;
 
 //TODO: switching model
 //TODO: do experiments
@@ -64,46 +68,54 @@ double estimate_pvalue_binomial(double x, int T, int N, int M){
  *        model given the degree sequence
  * 
  * @param deg_sequence  Degree sequence
+
  * @param T             Number of repetitions 
  * @return double       p-value of the null-hypothesis x_NH >= x
  */
+void switching_model(Graph& graph){
+    std::random_device rd;
+    std::mt19937 gen(rd());
+    std::uniform_int_distribution<int> vertexDist(0, num_vertices(graph) - 1);
 
-void switching_model(int Q, list_t& lst){
-    unsigned int nb_edges = lst.size();
+    // Choose two random vertices
+    int vertex1 = vertexDist(gen);
+    int vertex2 = vertexDist(gen);
+
+    // Choose a random neighbor for each vertex
+    std::vector<int> neighbors1, neighbors2;
+    boost::graph_traits<Graph>::adjacency_iterator adjIt, adjEnd;
+    for (boost::tie(adjIt, adjEnd) = boost::adjacent_vertices(vertex1, graph); adjIt != adjEnd; ++adjIt) {
+        neighbors1.push_back(*adjIt);
+    }
+    for (boost::tie(adjIt, adjEnd) = boost::adjacent_vertices(vertex2, graph); adjIt != adjEnd; ++adjIt) {
+        neighbors2.push_back(*adjIt);
+    }
     
-    // Defines a function that give a random edge.
-    std::uniform_int_distribution<int> get_rand_edge(0, nb_edges - 1);
-    
-    // Shuffles the edges, with the condition of not creating multiple edges or self-loops.
-    unsigned int nb_edge_swaps(0);
-    
-    while(nb_edge_swaps < Q*E)
-    {
-        auto e1 = nth_edge(lst, get_rand_edge(engine));
-        auto v1 = e1->s;
-        auto v2 = e1->t;
-    
-        auto e2 = nth_edge(lst, get_rand_edge(engine));
-        auto v3 = e2->s;
-        auto v4 = e2->t;
-    
-        // Avoids self-loops.
-        // Avoids multiple edge.
-        if ((v1 == v3) || (v2 == v4) || lst.count({v1,v3}) || lst.count({v2,v4}))
-            continue;
-    
-        // swap edges
-        edge_list_detail::erase_two(lst, e1, e2);
-        lst.emplace(v1, v3);
-        lst.emplace(v2, v4);
-    
-        // Counts the number of changes.
-        ++nb_edge_swaps;
-    }                          
+    if (neighbors1.empty() || neighbors2.empty()) {
+        std::cerr << "One of the selected vertices has no neighbors." << std::endl;
+        return;
+    }
+
+    std::uniform_int_distribution<int> neighborDist1(0, neighbors1.size() - 1);
+    std::uniform_int_distribution<int> neighborDist2(0, neighbors2.size() - 1);
+
+    int randomNeighbor1 = neighbors1[neighborDist1(gen)];
+    int randomNeighbor2 = neighbors2[neighborDist2(gen)];
+
+    // Swap the selected vertices with their neighbors
+    boost::remove_edge(vertex1, randomNeighbor1, graph);
+    boost::remove_edge(vertex2, randomNeighbor2, graph);
+    boost::add_edge(vertex1, randomNeighbor2, graph);
+    boost::add_edge(vertex2, randomNeighbor1, graph);
 }
-
 double estimate_pvalue_degree_sequence(std::vector<int> deg_sequence, int T){
     int f = 0;
+    
+    /* IDEA:
+     * for each switch: pick two vertices from list at random.
+     * For both, pisck at random one of their neighbors (use boost::adjacency_list)
+     * switch the neighbors - aka make two wiritngs in adjacency list
+     */
 
     // Use handshaking lemma to find number of vertices
     int E = std::accumulate(deg_sequence.begin(), deg_sequence.end(), 0)/2;
@@ -167,8 +179,7 @@ int main(int argc, char *argv[]) {
     // ****
     int N = 3;
     int E = 3;
-    std::vector<int> deg_sequence = {2, 2, 1}; 
-
+    
     int T = 1;
     // assert (1/(double)T < alpha); // Statistically significant
     
