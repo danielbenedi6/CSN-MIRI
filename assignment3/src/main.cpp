@@ -60,7 +60,7 @@ double estimate_pvalue_binomial(double x, int T, int N, int M, std::string filen
         // produce a random network following the null hypothesis
         Graph g = createRandomBinomialGraph(N, M);
         // Calculate x_NH on that network
-        double x_nh = montecarloClosenessCentrality(g, 5, 0.1, filename + "_closeness");
+        double x_nh = montecarloClosenessCentrality(g, 1, 0.1);
 		//std::cout << x_nh << " " << std::flush;
 
         X_NH[t] = x_nh;
@@ -96,8 +96,9 @@ double estimate_pvalue_switching(const Graph& graph, double x, int Q, int T, std
     for (int t = 0; t < T; t++){
         // produce a random network following the null hypothesis
         Graph g = createSwitchingModel(graph, Q);
-        // Calculate x_NH on that network
-        double x_nh = montecarloClosenessCentrality(g, 5, 0.1, filename + "_closeness");
+        double x_nh = montecarloClosenessCentrality(g, 1, 0.1);
+		//double x_nh = exactClosenessCentrality(g);
+		//std::cout << "Hypothesis value" << std::endl;
 
         X_NH[t] = x_nh;
 
@@ -166,9 +167,9 @@ int main(int argc, char *argv[]) {
             table1 << " \\\\ ";
         table1 << std::endl;
 		
-        double C = montecarloClosenessCentrality(g, 5, 0.1, language + "_closeness");
+        double C = montecarloClosenessCentrality(g, 5, 0.1);
 		double p_val_bin = estimate_pvalue_binomial(C, 100, N, E, language + "_binomial");
-		double p_val_sw = estimate_pvalue_switching(g, C, 1+(int)std::log(E), 100, language + "_switching");
+		double p_val_sw = estimate_pvalue_switching(g, C, 1+(int)std::log10(E), 100, language + "_switching");
 
         #ifdef DEBUG
 		double exactC = exactClosenessCentrality(g);
