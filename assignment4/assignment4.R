@@ -297,10 +297,11 @@ languages = c("Arabic", "Basque", "Catalan",
               "Greek", "Hungarian", "Italian",
               "Turkish")
 
+languages = c("Czech")
+
 for(language in languages) {
   cat("---------------------------------------------------------------------\n")
   cat("Language: ", language, "\n")
-  language = "Arabic"
   data = read_dataset(language)
   # Homocesdasticity test -> checking the assumption of the homogenity of variance
   # ...
@@ -494,7 +495,7 @@ for(language in languages) {
   ### wrt to s_value
   cat("Model with best s error: ", modelNames[which.min(s_list)], "\n")
   ## empirical data plot
-  plot(log(data$vertices), log(data$mean_length),
+  plot(log(data$vertices), log(dsata$mean_length),
        xlab = "log(vertices)", ylab = "log(mean dependency length)")
   ## best fit plot
   lines(log(data$vertices), log(fitted(models[[which.min(s_list)]])), col = "green")
@@ -509,3 +510,4 @@ for(language in languages) {
   lines(log(data$vertices), log(fitted(models[[which.min(AIC_list)]])), col = "green")
   
 }
+
