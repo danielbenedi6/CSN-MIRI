@@ -297,14 +297,6 @@ languages = c("Arabic", "Basque", "Catalan",
               "Greek", "Hungarian", "Italian",
               "Turkish")
 
-printErrorMetrics <- function(model) {
-  # Errors of the non-linear regression model
-  cat("Residual Standard Error (s): \n")
-  print(sqrt(deviance(model)/df.residual(model)))
-  cat("AIC: \n")
-  print(AIC(model))
-}
-
 for(language in languages) {
   cat("---------------------------------------------------------------------\n")
   cat("Language: ", language, "\n")
@@ -315,7 +307,10 @@ for(language in languages) {
   # Aggregation of the data in the case assumption does not hold (it does not for
   # any language)
   data = aggregate(data, list(data$vertices), mean)
-
+  
+  models <- list()
+  s_list <- list()
+  AIC_list <- list()
   # Fit of the models
   # Initial values for the params -> 1 for all the params: a, b and d
   # a_initial = 1
@@ -324,9 +319,10 @@ for(language in languages) {
   cat("################################## Model 1  ##################################")
   # f(n) = (n/2)^b
   b_initial = 1
-  nonlinear_model = nls(mean_length~(vertices/2)^b,data=data,
+  model_1 = nls(mean_length~(vertices/2)^b,data=data,
                         start = list(b = b_initial), trace = TRUE)
-  nonlinear_model
+  model_1
+  models[["model_1"]] <- model_1
   # ---------------------------------------------------------------------------#
   cat("... with optimized initial values: \n")
   # Opt: better init value for b param -> faster convergence
@@ -336,17 +332,25 @@ for(language in languages) {
                         start = list(b = b_init), trace = TRUE)
   # ---------------------------------------------------------------------------# 
   # Params giving the best fit for the model
-  coef(nonlinear_model)
-  coef(nonlinear_model)["b"]
-  printErrorMetrics(nonlinear_model)
+  coef(model_1)
+  coef(model_1)["b"]
+  # Errors of the non-linear regression model
+  s <- sqrt(deviance(model_1)/df.residual(model_1))
+  s_list <- append(s_list, s)
+  cat("Residual Standard Error (s): \n")
+  print(s)
+  AIC_value <- AIC(model_1)
+  AIC_list <- append(AIC_list, AIC_value)
+  cat("AIC: \n")
+  print(AIC_value)
   
   cat("################################## Model 2  ##################################")
   # f(n) = an^b - a power law model
   a_initial = 1
   b_initial = 1
-  nonlinear_model = nls(mean_length~a*vertices^b,data=data,
+  model_2 = nls(mean_length~a*vertices^b,data=data,
                         start = list(a = a_initial, b = b_initial), trace = TRUE)
-  nonlinear_model
+  models[["model_2"]] <- model_2
   # ---------------------------------------------------------------------------#
   cat("... with optimized initial values: \n")
   # Opt: better init values -> faster convergence
@@ -357,17 +361,26 @@ for(language in languages) {
       start = list(a = a_init, b = b_init), trace = TRUE)
   # ---------------------------------------------------------------------------# 
   # Params giving the best fit for the model
-  coef(nonlinear_model)
-  coef(nonlinear_model)["a"]
-  coef(nonlinear_model)["b"]
-  printErrorMetrics(nonlinear_model)
+  coef(model_2)
+  coef(model_2)["a"]
+  coef(model_2)["b"]
+  # Errors of the non-linear regression model
+  s <- sqrt(deviance(model_2)/df.residual(model_2))
+  s_list <- append(s_list, s)
+  cat("Residual Standard Error (s): \n")
+  print(s)
+  AIC_value <- AIC(model_2)
+  AIC_list <- append(AIC_list, AIC_value)
+  cat("AIC: \n")
+  print(AIC_value)
 
   cat("################################## Model 3  ##################################")
   # f(n) = ae^(cn) - an exponential model
   a_initial = 1
   b_initial = 0
-  nonlinear_model = nls(mean_length~a*exp(b*vertices),data=data,
+  model_3 = nls(mean_length~a*exp(b*vertices),data=data,
                         start = list(a = a_initial, b = b_initial), trace = TRUE)
+  models[["model_3"]] <- model_3
   # ---------------------------------------------------------------------------#
   cat("... with optimized initial values: \n")
   # Opt: better init values -> faster convergence
@@ -379,19 +392,26 @@ for(language in languages) {
       start = list(a = a_init, b = b_init), trace = TRUE)
   # ---------------------------------------------------------------------------# 
   # Params giving the best fit for the model
-  coef(nonlinear_model)
-  coef(nonlinear_model)["a"]
-  coef(nonlinear_model)["b"] # b is the same as c in this case
+  coef(model_3)
+  coef(model_3)["a"]
+  coef(model_3)["b"] # b is the same as c in this case
   # Errors of the non-linear regression model
-  sqrt(deviance(nonlinear_model)/df.residual(nonlinear_model))
-  AIC(nonlinear_model)
+  s <- sqrt(deviance(model_3)/df.residual(model_3))
+  s_list <- append(s_list, s)
+  cat("Residual Standard Error (s): \n")
+  print(s)
+  AIC_value <- AIC(model_3)
+  AIC_list <- append(AIC_list, AIC_value)
+  cat("AIC: \n")
+  print(AIC_value)
   
   cat("################################## Model 1+  ##################################")
   # f(n) = (n/2)^b + d
   b_initial = 1
   d_initial = 1
-  nonlinear_model = nls(mean_length~(vertices/2)^b + d,data=data,
+  model_1s = nls(mean_length~(vertices/2)^b + d,data=data,
                         start = list(b = b_initial, d = d_initial), trace = TRUE)
+  models[["model_1s"]] <- model_1s
   # ---------------------------------------------------------------------------#
   cat("... with optimized initial values: \n")
   # Opt: better init values -> faster convergence
@@ -406,21 +426,28 @@ for(language in languages) {
       start = list(b = b_init, d = d_init), trace = TRUE)
   # ---------------------------------------------------------------------------# 
   # Params giving the best fit for the model
-  coef(nonlinear_model)
-  coef(nonlinear_model)["b"]
-  coef(nonlinear_model)["d"] 
+  coef(model_1s)
+  coef(model_1s)["b"]
+  coef(model_1s)["d"] 
   # Errors of the non-linear regression model
-  sqrt(deviance(nonlinear_model)/df.residual(nonlinear_model))
-  AIC(nonlinear_model)
+  s <- sqrt(deviance(model_1s)/df.residual(model_1s))
+  s_list <- append(s_list, s)
+  cat("Residual Standard Error (s): \n")
+  print(s)
+  AIC_value <- AIC(model_1s)
+  AIC_list <- append(AIC_list, AIC_value)
+  cat("AIC: \n")
+  print(AIC_value)
   
   cat("################################## Model 2+  ##################################")
   # f(n) = ae^(cn) - an exponential model
   a_initial = 1
   b_initial = 1
   d_initial = 1
-  nonlinear_model = nls(mean_length~a*vertices^b + d,data=data,
+  model_2s = nls(mean_length~a*vertices^b + d,data=data,
                         start = list(a = a_initial, b = b_initial, d = d_initial),
                         trace = TRUE)
+  models[["model_2s"]] <- model_2s
   # ---------------------------------------------------------------------------#
   # NOTE: SLOWER THAN WITH INITIAL = 1 VALUE OF PARAMETERS!!
   cat("... with optimized initial values: \n")
@@ -435,13 +462,19 @@ for(language in languages) {
       start = list(a = a_init, b = b_init, d = d_init), trace = TRUE)
   # ---------------------------------------------------------------------------# 
   # Params giving the best fit for the model
-  coef(nonlinear_model)
-  coef(nonlinear_model)["a"]
-  coef(nonlinear_model)["b"]
-  coef(nonlinear_model)["d"]
+  coef(model_2s)
+  coef(model_2s)["a"]
+  coef(model_2s)["b"]
+  coef(model_2s)["d"]
   # Errors of the non-linear regression model
-  sqrt(deviance(nonlinear_model)/df.residual(nonlinear_model))
-  AIC(nonlinear_model)
+  s <- sqrt(deviance(model_2s)/df.residual(model_2s))
+  s_list <- append(s_list, s)
+  cat("Residual Standard Error (s): \n")
+  print(s)
+  AIC_value <- AIC(model_2s)
+  AIC_list <- append(AIC_list, AIC_value)
+  cat("AIC: \n")
+  print(AIC_value)
   
   cat("################################## Null model ################################")
   # The RSS, s and AIC for a non-parametric model (such as the null model)
@@ -455,10 +488,24 @@ for(language in languages) {
   AIC
   ########
   # Plot the empirical data and the curve for the best fit:
+  # Best model - the one with lower error values
+  modelNames <- names(models)
+  
+  ### wrt to s_value
+  cat("Model with best s error: ", modelNames[which.min(s_list)], "\n")
   ## empirical data plot
   plot(log(data$vertices), log(data$mean_length),
        xlab = "log(vertices)", ylab = "log(mean dependency length)")
   ## best fit plot
-  lines(log(data$vertices), log(fitted(nonlinear_model)), col = "green")
+  lines(log(data$vertices), log(fitted(models[[which.min(s_list)]])), col = "green")
+  
+  
+  ###  wrt to AIC value
+  cat("Model with best AIC: ", modelNames[which.min(AIC_list)], "\n")
+  ## empirical data plot
+  plot(log(data$vertices), log(data$mean_length),
+       xlab = "log(vertices)", ylab = "log(mean dependency length)")
+  ## best fit plot
+  lines(log(data$vertices), log(fitted(models[[which.min(AIC_list)]])), col = "green")
   
 }
