@@ -1,5 +1,6 @@
 library(ggplot2)
 library(stats)
+library(lmtest)
 
 read_dataset <- function(language) {
   dataset = read.table(paste("./data/",language,"_dependency_tree_metrics.txt",sep=""), header=FALSE)
@@ -33,56 +34,6 @@ print_row_type2 <- function(language, model0, model1, model2, model3, model4, mo
           model4p  # Model 4+
   )
 }
-
-model1 <- function(n,b) {
-  (n/2)**b
-}
-log_model1 <- function(n,b) {
-  b * log(n/2)
-}
-model2 <- function(n,a,b) {
-  a*n**b
-}
-log_model2 <- function(n,a,b) {
-  log(a) + b*log(n)
-}
-model3 <- function(n,a,c) {
-  a*exp(c*n)
-}
-log_model3 <- function(n,a,c) {
-  log(a) + c*n
-}
-model4 <- function(n,a) {
-  a*log(n)
-}
-log_model4 <- function(n,a) {
-  log(a) + log(log(n))
-}
-model1_plus <- function(n.b,d) {
-  (n/2)**b +d
-}
-log_model1_plus <- function(n,b,d) {
-  log((n/2)**b + d)
-}
-model2_plus <- function(n,a,b,d) {
-  a*n**b+d
-}
-log_model2_plus <- function(n,a,b,d) {
-  log(a*n**b+d)
-}
-model3 <- function(n,a,c,d) {
-  a*exp(c*n)+d
-}
-log_model3 <- function(n,a,c,d) {
-  log(a*exp(c*n)+d)
-}
-model4 <- function(n,a) {
-  a*log(n) + d
-}
-log_model4 <- function(n,a) {
-  log(a*log(n) + d)
-}
-
 
 languages = c("Arabic", "Basque", "Catalan",
               "Chinese", "Czech", "English",
@@ -120,12 +71,39 @@ table_params <- r"(\begin{table}[!htb]
          & \multicolumn{1}{l|}{1} & \multicolumn{2}{l|}{2}     & \multicolumn{2}{l|}{3}     & \multicolumn{1}{l|}{4} & \multicolumn{2}{l|}{1+}    & \multicolumn{3}{l|}{2+}        & \multicolumn{3}{l|}{3+}        & \multicolumn{2}{l}{4+} \\
 Language & \multicolumn{1}{l|}{b} & a & \multicolumn{1}{l|}{b} & a & \multicolumn{1}{l|}{c} & \multicolumn{1}{l|}{a} & b & \multicolumn{1}{l|}{d} & a & b & \multicolumn{1}{l|}{d} & a & c & \multicolumn{1}{l|}{d} & a & d \\ \hline
 )"
-
+# 
 for(language in languages){
+  cat(language)
   data = read_dataset(language)
+  
+  # First condition 4-6-n <= <k²> <= n - 1
+  data = subset(subset(data, 4-6/vertices <= degree_2nd_moment),degree_2nd_moment <= vertices - 1)
+  # Second condition n/(8(n-1))<k²> +1/2 <= <d> <= n - 1
+  data = subset(subset(data, vertices/(8*(vertices-1)) * degree_2nd_moment + 1/2 <= mean_length),mean_length <= vertices - 1)
+  
   table_summary <- paste(table_summary,generate_table_entry(language,data), sep="\n")
   
-  means = aggregate(data, list(data$vertices), mean)
+  if(bptest(lm(mean_length ~ vertices, data=data))$p.value < 0.05) {
+    cat(" Heteroscedasticity\n")
+    data = aggregate(data, list(data$vertices), mean)
+  }  else {
+    cat(" Homoscedasticity\n")
+  }
+  
+  #DO FIT FOR EACH MODEL
+  
+  model_fit_1 = nls(mean_length ~ (vertices/2)^b, start = list(b = 1),data=data)
+  param_b_model1 = coef(model_fit_1)[1]
+  deviance_model1 = deviance(model_fit_1)
+  aic_model1 = AIC(model_fit_1)
+  s_model1 = sqrt(deviance_model1/df.residual(model_fit_1))
+  
+  model_fit_2 = nls(mean_length ~ a*vertices^b, start = list(a = 1, b = 1),data=data)
+  param_a_model2 = coef(model_fit_2)[1]
+  param_b_model2 = coef(model_fit_2)[2]
+  deviance_model2 = deviance(model_fit_2)
+  aic_model2 = AIC(model_fit_2)
+  s_model2 = sqrt(deviance_model2/df.residual(model_fit_2))
   
   plt <- ggplot() + geom_point(data=dataset, aes(x=vertices,y=mean_length))
   plt <- plt + geom_line(data=means, aes(x=vertices,y=mean_length), color="green")
@@ -135,10 +113,12 @@ for(language in languages){
   plt <- plt + xlab("Number of vertices")
   plt <- plt + ylab("Mean length")
   
+  next;
+  
   table_res_se <- paste(table_res_se, print_row_type2(language,
                                                       0., # Model 0
-                                                      0., # Model 1
-                                                      0., # Model 2
+                                                      s_model1, # Model 1
+                                                      s_model2, # Model 2
                                                       0., # Model 3
                                                       0., # Model 4
                                                       0., # Model 1+
@@ -148,8 +128,8 @@ for(language in languages){
   ), sep="\n")
   table_aic <- paste(table_aic, print_row_type2(language,
                                                       0., # Model 0
-                                                      0., # Model 1
-                                                      0., # Model 2
+                                                      aic_model1, # Model 1
+                                                      aic_model2, # Model 2
                                                       0., # Model 3
                                                       0., # Model 4
                                                       0., # Model 1+
@@ -180,6 +160,7 @@ for(language in languages){
                                               param_a_model4p, param_d_model4p
   ), sep="\n")
 }
+
 table_summary <- paste(table_summary, r"(\end{tabular}}
 \caption{Summary of the properties of the degree sequences \label{tab:summary}}
 \end{table})",sep="\n")
