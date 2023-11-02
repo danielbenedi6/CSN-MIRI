@@ -297,6 +297,14 @@ languages = c("Arabic", "Basque", "Catalan",
               "Greek", "Hungarian", "Italian",
               "Turkish")
 
+printErrorMetrics <- function(model) {
+  # Errors of the non-linear regression model
+  cat("Residual Standard Error (s): \n")
+  print(sqrt(deviance(model)/df.residual(model)))
+  cat("AIC: \n")
+  print(AIC(model))
+}
+
 for(language in languages) {
   cat("---------------------------------------------------------------------\n")
   cat("Language: ", language, "\n")
@@ -310,14 +318,17 @@ for(language in languages) {
 
   # Fit of the models
   # Initial values for the params -> 1 for all the params: a, b and d
-  a_initial = 1
-  b_initial = 1
-  d_initial = 1
-  ################################## Model 1  ##################################
+  # a_initial = 1
+  # b_initial = 1
+  # d_initial = 1
+  cat("################################## Model 1  ##################################")
   # f(n) = (n/2)^b
+  b_initial = 1
   nonlinear_model = nls(mean_length~(vertices/2)^b,data=data,
                         start = list(b = b_initial), trace = TRUE)
+  nonlinear_model
   # ---------------------------------------------------------------------------#
+  cat("... with optimized initial values: \n")
   # Opt: better init value for b param -> faster convergence
   linear_model = lm(log(mean_length)~log(vertices/2), data=data)
   b_init = coef(linear_model)[2]
@@ -327,26 +338,46 @@ for(language in languages) {
   # Params giving the best fit for the model
   coef(nonlinear_model)
   coef(nonlinear_model)["b"]
-  # Errors of the non-linear regression model
-  sqrt(deviance(nonlinear_model)/df.residual(nonlinear_model))
-  AIC(nonlinear_model)
+  printErrorMetrics(nonlinear_model)
   
-  ################################## Model 2  ##################################
+  cat("################################## Model 2  ##################################")
   # f(n) = an^b - a power law model
+  a_initial = 1
+  b_initial = 1
   nonlinear_model = nls(mean_length~a*vertices^b,data=data,
                         start = list(a = a_initial, b = b_initial), trace = TRUE)
+  nonlinear_model
+  # ---------------------------------------------------------------------------#
+  cat("... with optimized initial values: \n")
+  # Opt: better init values -> faster convergence
+  linear_model = lm(log(mean_length)~log(vertices), data=data)
+  a_init =  exp(coef(linear_model)[1])
+  b_init = coef(linear_model)[2]
+  nls(mean_length~a*vertices^b,data=data,
+      start = list(a = a_init, b = b_init), trace = TRUE)
+  # ---------------------------------------------------------------------------# 
   # Params giving the best fit for the model
   coef(nonlinear_model)
   coef(nonlinear_model)["a"]
   coef(nonlinear_model)["b"]
-  # Errors of the non-linear regression model
-  sqrt(deviance(nonlinear_model)/df.residual(nonlinear_model))
-  AIC(nonlinear_model)
+  printErrorMetrics(nonlinear_model)
 
-  ################################## Model 3  ##################################
+  cat("################################## Model 3  ##################################")
   # f(n) = ae^(cn) - an exponential model
+  a_initial = 1
+  b_initial = 0
   nonlinear_model = nls(mean_length~a*exp(b*vertices),data=data,
                         start = list(a = a_initial, b = b_initial), trace = TRUE)
+  # ---------------------------------------------------------------------------#
+  cat("... with optimized initial values: \n")
+  # Opt: better init values -> faster convergence
+  linear_model = lm(log(mean_length)~vertices, data=data)
+  linear_model
+  b_init = coef(linear_model)[2] # slope 
+  a_init = exp(coef(linear_model)[1]) # e^intercept = a
+  nls(mean_length~a*exp(b*vertices),data=data,
+      start = list(a = a_init, b = b_init), trace = TRUE)
+  # ---------------------------------------------------------------------------# 
   # Params giving the best fit for the model
   coef(nonlinear_model)
   coef(nonlinear_model)["a"]
@@ -355,8 +386,11 @@ for(language in languages) {
   sqrt(deviance(nonlinear_model)/df.residual(nonlinear_model))
   AIC(nonlinear_model)
   
-  ################################## Model 1+  ##################################
+  cat("################################## Model 1+  ##################################")
   # f(n) = (n/2)^b + d
+  a_initial = 1
+  b_initial = 1
+  d_initial = 1
   nonlinear_model = nls(mean_length~(vertices/2)^b + d,data=data,
                         start = list(b = b_initial, d = d_initial), trace = TRUE)
   # Params giving the best fit for the model
@@ -367,8 +401,11 @@ for(language in languages) {
   sqrt(deviance(nonlinear_model)/df.residual(nonlinear_model))
   AIC(nonlinear_model)
   
-  ################################## Model 2+  ##################################
+  cat("################################## Model 2+  ##################################")
   # f(n) = ae^(cn) - an exponential model
+  a_initial = 1
+  b_initial = 1
+  d_initial = 1
   nonlinear_model = nls(mean_length~a*vertices^b + d,data=data,
                         start = list(a = a_initial, b = b_initial, d = d_initial),
                         trace = TRUE)
@@ -381,7 +418,7 @@ for(language in languages) {
   sqrt(deviance(nonlinear_model)/df.residual(nonlinear_model))
   AIC(nonlinear_model)
   
-  ################################## Null model ################################
+  cat("################################## Null model ################################")
   # The RSS, s and AIC for a non-parametric model (such as the null model)
   # {d} = n/3 + 1/3
   RSS <- sum((Catalan$mean_length-(Catalan$vertices+1)/3)^2)
