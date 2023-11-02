@@ -233,9 +233,168 @@ plot(log(Catalan$vertices), log(Catalan$mean_length),
 lines(log(mean_Catalan$vertices),log(mean_Catalan$mean_length), col = "green")
 lines(log(mean_Catalan$vertices),log((mean_Catalan$vertices+1)/3), col = "red")
 
-# 2. Ensemble of models
+# 2. Ensemble of models..
+# Non-linear regression -> fit of the models
+
+# Model 2: an^b (a power-law model)
+a_initial = 4
+b_initial = 4
+nonlinear_model = nls(mean_length ~ a*vertices^b,data=Catalan,
+                      start = list(a = a_initial, b = b_initial), trace = TRUE)
+
+# ... before, arbitrary initial values 
+# --> obtention of good initial values for the params
+linear_model = lm(log(mean_length)~log(vertices), Catalan)
+# retrieving the coefs of the linear regression model done to obtain the initial
+# values for the params -> a + bx 
+a_initial = exp(coef(linear_model)[1])
+b_initial = coef(linear_model)[2]
+
+# Running again the non-linear regression with "better" initial values for the 
+# params --> faster convergence
+nonlinear_model = nls(mean_length~a*vertices^b,data=Catalan,
+                      start = list(a = a_initial, b = b_initial), trace = TRUE)
+
+# Errors of the non-linear regression model -> to measure the quality of the fit
+deviance(nonlinear_model)
+AIC(nonlinear_model)
+
+# residual standard error 
+# - measures the standard deviation of the residuals in a regression model
+# - the smaller the residual standard error, the better a regression model fits 
+#   a dataset
+# - sqrt(RSS / df) -> sum of squared residuals (RSS) / degrees of freedom 
+#   (= # of observations - # of model parameters)
+
+sqrt(deviance(nonlinear_model)/df.residual(nonlinear_model))
+
+# Params giving the best fit for the model
+coef(nonlinear_model)
+coef(nonlinear_model)["a"]
+coef(nonlinear_model)["b"]
+
+# The RSS, s and AIC for a non-parametric model (such as the null model)
+# {d} = n/3 + 1/3
+RSS <- sum((Catalan$mean_length-(Catalan$vertices+1)/3)^2)
+n <- length(Catalan$vertices)
+p <- 0
+s <- sqrt(RSS/(n - p))
+AIC <- n*log(2*pi) + n*log(RSS/n) + n + 2*(p + 1)
 
 
+# Plot the empirical data and the curve for the best fit:
+## empirical data plot
+plot(log(Catalan$vertices), log(Catalan$mean_length),
+     xlab = "log(vertices)", ylab = "log(mean dependency length)")
+## best fit plot
+lines(log(Catalan$vertices), log(fitted(nonlinear_model)), col = "green")
 
 
+################################################################################
+# Fitting the models for each of the languages
+languages = c("Arabic", "Basque", "Catalan",
+              "Chinese", "Czech", "English",
+              "Greek", "Hungarian", "Italian",
+              "Turkish")
 
+for(language in languages) {
+  cat("---------------------------------------------------------------------\n")
+  cat("Language: ", language, "\n")
+  language = "Arabic"
+  data = read_dataset(language)
+  # Homocesdasticity test -> checking the assumption of the homogenity of variance
+  # ...
+  # Aggregation of the data in the case assumption does not hold (it does not for
+  # any language)
+  data = aggregate(data, list(data$vertices), mean)
+
+  # Fit of the models
+  # Initial values for the params -> 1 for all the params: a, b and d
+  a_initial = 1
+  b_initial = 1
+  d_initial = 1
+  ################################## Model 1  ##################################
+  # f(n) = (n/2)^b
+  nonlinear_model = nls(mean_length~(vertices/2)^b,data=data,
+                        start = list(b = b_initial), trace = TRUE)
+  # ---------------------------------------------------------------------------#
+  # Opt: better init value for b param -> faster convergence
+  linear_model = lm(log(mean_length)~log(vertices/2), data=data)
+  b_init = coef(linear_model)[2]
+  nls(mean_length~(vertices/2)^b,data=data,
+                        start = list(b = b_init), trace = TRUE)
+  # ---------------------------------------------------------------------------# 
+  # Params giving the best fit for the model
+  coef(nonlinear_model)
+  coef(nonlinear_model)["b"]
+  # Errors of the non-linear regression model
+  sqrt(deviance(nonlinear_model)/df.residual(nonlinear_model))
+  AIC(nonlinear_model)
+  
+  ################################## Model 2  ##################################
+  # f(n) = an^b - a power law model
+  nonlinear_model = nls(mean_length~a*vertices^b,data=data,
+                        start = list(a = a_initial, b = b_initial), trace = TRUE)
+  # Params giving the best fit for the model
+  coef(nonlinear_model)
+  coef(nonlinear_model)["a"]
+  coef(nonlinear_model)["b"]
+  # Errors of the non-linear regression model
+  sqrt(deviance(nonlinear_model)/df.residual(nonlinear_model))
+  AIC(nonlinear_model)
+
+  ################################## Model 3  ##################################
+  # f(n) = ae^(cn) - an exponential model
+  nonlinear_model = nls(mean_length~a*exp(b*vertices),data=data,
+                        start = list(a = a_initial, b = b_initial), trace = TRUE)
+  # Params giving the best fit for the model
+  coef(nonlinear_model)
+  coef(nonlinear_model)["a"]
+  coef(nonlinear_model)["b"] # b is the same as c in this case
+  # Errors of the non-linear regression model
+  sqrt(deviance(nonlinear_model)/df.residual(nonlinear_model))
+  AIC(nonlinear_model)
+  
+  ################################## Model 1+  ##################################
+  # f(n) = (n/2)^b + d
+  nonlinear_model = nls(mean_length~(vertices/2)^b + d,data=data,
+                        start = list(b = b_initial, d = d_initial), trace = TRUE)
+  # Params giving the best fit for the model
+  coef(nonlinear_model)
+  coef(nonlinear_model)["b"]
+  coef(nonlinear_model)["d"] 
+  # Errors of the non-linear regression model
+  sqrt(deviance(nonlinear_model)/df.residual(nonlinear_model))
+  AIC(nonlinear_model)
+  
+  ################################## Model 2+  ##################################
+  # f(n) = ae^(cn) - an exponential model
+  nonlinear_model = nls(mean_length~a*vertices^b + d,data=data,
+                        start = list(a = a_initial, b = b_initial, d = d_initial),
+                        trace = TRUE)
+  # Params giving the best fit for the model
+  coef(nonlinear_model)
+  coef(nonlinear_model)["a"]
+  coef(nonlinear_model)["b"]
+  coef(nonlinear_model)["d"]
+  # Errors of the non-linear regression model
+  sqrt(deviance(nonlinear_model)/df.residual(nonlinear_model))
+  AIC(nonlinear_model)
+  
+  ################################## Null model ################################
+  # The RSS, s and AIC for a non-parametric model (such as the null model)
+  # {d} = n/3 + 1/3
+  RSS <- sum((Catalan$mean_length-(Catalan$vertices+1)/3)^2)
+  n <- length(Catalan$vertices)
+  p <- 0
+  s <- sqrt(RSS/(n - p))
+  AIC <- n*log(2*pi) + n*log(RSS/n) + n + 2*(p + 1)
+  ########
+  # Plot the empirical data and the curve for the best fit:
+  ## empirical data plot
+  plot(log(Catalan$vertices), log(Catalan$mean_length),
+       xlab = "log(vertices)", ylab = "log(mean dependency length)")
+  ## best fit plot
+  lines(log(Catalan$vertices), log(fitted(nonlinear_model)), col = "green")
+  
+}
