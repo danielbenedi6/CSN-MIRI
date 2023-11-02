@@ -195,3 +195,47 @@ table_aic_diff <- paste(table_aic_diff, r"(\end{tabular}}
 table_params <- paste(table_params, r"(\end{tabular}}
 \caption{Parameters of each fitted model \label{tab:params}}
 \end{table})",sep="\n")
+
+
+# Data Analysis
+
+# 0. loads info of catalan dependency trees, sorting it increasingly by # of vertices
+Catalan = read.table("./data/Catalan_dependency_tree_metrics.txt", header = FALSE)
+colnames(Catalan) = c("vertices","degree_2nd_moment", "mean_length")
+Catalan = Catalan[order(Catalan$vertices), ]
+
+# 1. preliminary plot
+plot(Catalan$vertices, Catalan$mean_length,
+     xlab = "vertices", ylab = "mean dependency length")
+# same but taking logs on both axes --> 
+## suggest a power-law dependency between mean length and number of vertices,
+## in spite of the high dispersion. 
+plot(log(Catalan$vertices), log(Catalan$mean_length),
+     xlab = "log(vertices)", ylab = "log(mean dependency length)")
+# even clearer, it can be seen by averaging the mean lengths for a given # of 
+# vertices
+mean_Catalan = aggregate(Catalan, list(Catalan$vertices), mean)
+plot(mean_Catalan$vertices, mean_Catalan$mean_length,
+     xlab = "vertices", ylab = "mean mean dependency length")
+# in log scale
+plot(log(mean_Catalan$vertices), log(mean_Catalan$mean_length),
+     xlab = "log(vertices)", ylab = "log(mean mean dependency length)")
+
+# NOTE: intuition about how far the real scaling of the mean dependency length
+# {d} is from the random linear arrangement can be seen comparing both plots
+# -> random linear arrangement coming from expected mean length = (n+1)/3 --> NULL MODEL
+## real mean dependency length -> green
+## expected mean ...           -> red
+## (plot in double log scale)
+## NOTE: plot for {d} versus n suggests an almost power-law dependency.
+plot(log(Catalan$vertices), log(Catalan$mean_length),
+       xlab = "vertices", ylab = "mean dependency length")
+lines(log(mean_Catalan$vertices),log(mean_Catalan$mean_length), col = "green")
+lines(log(mean_Catalan$vertices),log((mean_Catalan$vertices+1)/3), col = "red")
+
+# 2. Ensemble of models
+
+
+
+
+
