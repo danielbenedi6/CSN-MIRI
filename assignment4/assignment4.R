@@ -388,11 +388,23 @@ for(language in languages) {
   
   cat("################################## Model 1+  ##################################")
   # f(n) = (n/2)^b + d
-  a_initial = 1
   b_initial = 1
   d_initial = 1
   nonlinear_model = nls(mean_length~(vertices/2)^b + d,data=data,
                         start = list(b = b_initial, d = d_initial), trace = TRUE)
+  # ---------------------------------------------------------------------------#
+  cat("... with optimized initial values: \n")
+  # Opt: better init values -> faster convergence
+  # take d_init as 1/2 of the min of the mean_length observations: 
+  # good reference: 
+  # https://stats.stackexchange.com/questions/160552/why-is-nls-giving-me-singular-gradient-matrix-at-initial-parameter-estimates
+  d_init = min(data$mean_length) / 2
+  linear_model = lm(log(mean_length - d_init)~log(vertices/2), data=data)
+  linear_model
+  b_init = coef(linear_model)[2]
+  nls(mean_length~(vertices/2)^b + d,data=data,
+      start = list(b = b_init, d = d_init), trace = TRUE)
+  # ---------------------------------------------------------------------------# 
   # Params giving the best fit for the model
   coef(nonlinear_model)
   coef(nonlinear_model)["b"]
@@ -409,6 +421,19 @@ for(language in languages) {
   nonlinear_model = nls(mean_length~a*vertices^b + d,data=data,
                         start = list(a = a_initial, b = b_initial, d = d_initial),
                         trace = TRUE)
+  # ---------------------------------------------------------------------------#
+  # NOTE: SLOWER THAN WITH INITIAL = 1 VALUE OF PARAMETERS!!
+  cat("... with optimized initial values: \n")
+  # Opt: better init values -> faster convergence
+  # take d_init as 1/2 of the min of the mean_length observations: 
+  d_init = min(data$mean_length) / 2
+  linear_model = lm(log(mean_length - d_init)~log(vertices), data=data)
+  linear_model
+  a_init = exp(coef(linear_model)[1]) # a = e^intercept
+  b_init = coef(linear_model)[2] # b = slope
+  nls(mean_length~a*vertices^b + d,data=data,
+      start = list(a = a_init, b = b_init, d = d_init), trace = TRUE)
+  # ---------------------------------------------------------------------------# 
   # Params giving the best fit for the model
   coef(nonlinear_model)
   coef(nonlinear_model)["a"]
@@ -421,17 +446,19 @@ for(language in languages) {
   cat("################################## Null model ################################")
   # The RSS, s and AIC for a non-parametric model (such as the null model)
   # {d} = n/3 + 1/3
-  RSS <- sum((Catalan$mean_length-(Catalan$vertices+1)/3)^2)
-  n <- length(Catalan$vertices)
+  RSS <- sum((data$mean_length-(data$vertices+1)/3)^2)
+  n <- length(data$vertices)
   p <- 0
   s <- sqrt(RSS/(n - p))
+  s
   AIC <- n*log(2*pi) + n*log(RSS/n) + n + 2*(p + 1)
+  AIC
   ########
   # Plot the empirical data and the curve for the best fit:
   ## empirical data plot
-  plot(log(Catalan$vertices), log(Catalan$mean_length),
+  plot(log(data$vertices), log(data$mean_length),
        xlab = "log(vertices)", ylab = "log(mean dependency length)")
   ## best fit plot
-  lines(log(Catalan$vertices), log(fitted(nonlinear_model)), col = "green")
+  lines(log(data$vertices), log(fitted(nonlinear_model)), col = "green")
   
 }
