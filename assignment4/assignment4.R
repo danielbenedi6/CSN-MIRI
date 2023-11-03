@@ -212,6 +212,7 @@ languages = c("Arabic", "Basque", "Catalan",
               "Turkish")
 
 for(language in languages) {
+  language="Czech"
   cat("---------------------------------------------------------------------\n")
   cat("Language: ", language, "\n")
   data = read_dataset(language)
@@ -225,10 +226,6 @@ for(language in languages) {
   s_list <- list()
   AIC_list <- list()
   # Fit of the models
-  # Initial values for the params -> 1 for all the params: a, b and d
-  # a_initial = 1
-  # b_initial = 1
-  # d_initial = 1
   cat("################################## Model 1  ##################################\n")
   # f(n) = (n/2)^b
   b_initial = 1
@@ -331,7 +328,7 @@ for(language in languages) {
   # take d_init as 1/2 of the min of the mean_length observations: 
   # good reference: 
   # https://stats.stackexchange.com/questions/160552/why-is-nls-giving-me-singular-gradient-matrix-at-initial-parameter-estimates
-  d_init = min(data$mean_length) / 2
+  d_init = min(data$mean_length) - 0.001
   linear_model = lm(log(mean_length - d_init)~log(vertices/2), data=data)
   linear_model
   b_init = coef(linear_model)[2]
@@ -353,22 +350,10 @@ for(language in languages) {
   print(AIC_value)
   
   cat("################################## Model 2+  ##################################\n")
-  # f(n) = ae^(cn) - an exponential model
-  # NOTE: Fails for chinese and czech
-  # a_initial = 1
-  # b_initial = 1
-  # d_initial = 1
-  # model_2s = nls(mean_length~a*vertices^b + d,data=data,
-  #                       start = list(a = a_initial, b = b_initial, d = d_initial),
-  #                       trace = TRUE)
-  # models[["model_2s"]] <- model_2s
+  # f(n) = an^b + d
   # ---------------------------------------------------------------------------#
-  # NOTE: SLOWER THAN WITH INITIAL = 1 VALUE OF PARAMETERS!! -> but no error (chinese & czech
-  # fail with the previous init values approach)
   cat("... with optimized initial values: \n")
-  # Opt: better init values -> faster convergence
-  # take d_init as 1/2 of the min of the mean_length observations: 
-  d_init = min(data$mean_length) / 2
+  d_init = min(data$mean_length) - 0.001
   linear_model = lm(log(mean_length - d_init)~log(vertices), data=data)
   linear_model
   a_init = exp(coef(linear_model)[1]) # a = e^intercept
@@ -411,7 +396,8 @@ for(language in languages) {
   cat("Model with best s error: ", modelNames[which.min(s_list)], "\n")
   ## empirical data plot
   plot(log(data$vertices), log(data$mean_length),
-       xlab = "log(vertices)", ylab = "log(mean dependency length)")
+       xlab = "log(vertices)", ylab = "log(mean dependency length)", 
+       main = paste("s", language,  modelNames[which.min(s_list)], sep=" "))
   ## best fit plot
   lines(log(data$vertices), log(fitted(models[[which.min(s_list)]])), col = "green")
   
@@ -420,7 +406,16 @@ for(language in languages) {
   cat("Model with best AIC: ", modelNames[which.min(AIC_list)], "\n")
   ## empirical data plot
   plot(log(data$vertices), log(data$mean_length),
-       xlab = "log(vertices)", ylab = "log(mean dependency length)")
+       xlab = "log(vertices)", ylab = "log(mean dependency length)", 
+       main = paste("AIC", language,  modelNames[which.min(AIC_list)], sep=" "))
   ## best fit plot
   lines(log(data$vertices), log(fitted(models[[which.min(AIC_list)]])), col = "green")
+  
+  lines(log(data$vertices), log(fitted(models[[1]])))
+  lines(log(data$vertices), log(fitted(models[[2]])))
+  lines(log(data$vertices), log(fitted(models[[3]])))
+  lines(log(data$vertices), log(fitted(models[[4]])))
+  lines(log(data$vertices), log(fitted(models[[5]])))
+  
+  
 }
