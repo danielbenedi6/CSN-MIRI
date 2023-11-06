@@ -99,7 +99,14 @@ for(language in languages){
   linear_model = lm(log(mean_length)~log(vertices/2), data=data)
   b_init = coef(linear_model)[2]
   model_1 = nls(mean_length~(vertices/2)^b,data=data,
-                start = list(b = b_init), trace = FALSE)
+                start = list(b = b_init),
+                control=nls.control(warnOnly=TRUE), 
+                trace = FALSE)
+  
+  if(model_1$convInfo["stopCode"] != 0 && model_1$convInfo["stopCode"] != 3) {
+    signalCondition(model_1$convInfo["stopMessage"])
+  }
+  
   models[["model_1"]] <- model_1
   # ---------------------------------------------------------------------------# 
   # Params giving the best fit for the model
@@ -120,7 +127,14 @@ for(language in languages){
   a_init =  exp(coef(linear_model)[1])
   b_init = coef(linear_model)[2]
   model_2 = nls(mean_length~a*vertices^b,data=data,
-                start = list(a = a_init, b = b_init), trace = FALSE)
+                start = list(a = a_init, b = b_init),
+                control=nls.control(warnOnly=TRUE), 
+                trace = FALSE)
+  
+  if(model_2$convInfo["stopCode"] != 0 && model_2$convInfo["stopCode"] != 3) {
+    signalCondition(model_2$convInfo["stopMessage"])
+  }
+  
   models[["model_2"]] <- model_2
   # ---------------------------------------------------------------------------# 
   # Params giving the best fit for the model
@@ -142,7 +156,13 @@ for(language in languages){
   c_init = coef(linear_model)[2] # slope 
   a_init = exp(coef(linear_model)[1]) # e^intercept = a
   model_3 = nls(mean_length~a*exp(c*vertices),data=data,
-                start = list(a = a_init, c = c_init), trace = FALSE)
+                start = list(a = a_init, c = c_init),
+                control=nls.control(warnOnly=TRUE), 
+                trace = FALSE)
+  
+  if(model_3$convInfo["stopCode"] != 0 && model_3$convInfo["stopCode"] != 3) {
+    signalCondition(model_3$convInfo["stopMessage"])
+  }
   models[["model_3"]] <- model_3
   # ---------------------------------------------------------------------------# 
   # Params giving the best fit for the model
@@ -163,7 +183,13 @@ for(language in languages){
   linear_model = lm(log(mean_length)~vertices, data=data)
   a_init = exp(coef(linear_model)[1]) # e^intercept = a
   model_4 = nls(mean_length~a*log(vertices),data=data,
-                start = list(a = a_init), trace = FALSE)
+                start = list(a = a_init),
+                control=nls.control(warnOnly=TRUE), 
+                trace = FALSE)
+  
+  if(model_4$convInfo["stopCode"] != 0 && model_4$convInfo["stopCode"] != 3) {
+    signalCondition(model_4$convInfo["stopMessage"])
+  }
   models[["model_4"]] <- model_4
   # ---------------------------------------------------------------------------# 
   # Params giving the best fit for the model
@@ -187,8 +213,14 @@ for(language in languages){
   linear_model = lm(log(mean_length - d_init)~log(vertices/2), data=data)
   b_init = coef(linear_model)[2]
   model_1p <- nls(mean_length~(vertices/2)^b + d,data=data,
-                  start = list(b = b_init, d = d_init), trace = FALSE)
-  models[["model_1p"]] <- model_3
+                  start = list(b = b_init, d = d_init),
+                  control=nls.control(warnOnly=TRUE), 
+                  trace = FALSE)
+  
+  if(model_1p$convInfo["stopCode"] != 0 && model_1p$convInfo["stopCode"] != 3) {
+    signalCondition(model_1p$convInfo["stopMessage"])
+  }
+  models[["model_1p"]] <- model_1p
   # ---------------------------------------------------------------------------# 
   # Params giving the best fit for the model
   param_b_model1p <- coef(model_1p)["b"]
@@ -211,13 +243,19 @@ for(language in languages){
   a_init = exp(coef(linear_model)[1]) # a = e^intercept
   b_init = coef(linear_model)[2] # b = slope
   model_2p = nls(mean_length~a*vertices^b + d,data=data,
-                 start = list(a = a_init, b = b_init, d = d_init), trace = FALSE)
+                 start = list(a = a_init, b = b_init, d = d_init),
+                 control=nls.control(warnOnly=TRUE), 
+                 trace = FALSE)
+  
+  if(model_2p$convInfo["stopCode"] != 0 && model_2p$convInfo["stopCode"] != 3) {
+    signalCondition(model_2p$convInfo["stopMessage"])
+  }
   models[["model_2p"]] <- model_2p
   # ---------------------------------------------------------------------------# 
   # Params giving the best fit for the model
-  param_a_model2p = coef(model_2)["a"]
-  param_b_model2p = coef(model_2)["b"]
-  param_d_model2p = coef(model_2)["d"]
+  param_a_model2p = coef(model_2p)["a"]
+  param_b_model2p = coef(model_2p)["b"]
+  param_d_model2p = coef(model_2p)["d"]
   # Errors of the non-linear regression model
   s_model2p <- sqrt(deviance(model_2p)/df.residual(model_2p))
   s_list <- append(s_list, s_model2p)
@@ -235,7 +273,12 @@ for(language in languages){
   c_init = coef(linear_model)[2] # slope 
   a_init = exp(coef(linear_model)[1]) # e^intercept = a
   model_3p = nls(mean_length~a*exp(c*vertices)+d,data=data,
-                start = list(a = a_init, c = c_init, d = d_init), trace = FALSE,control=nls.control(maxiter=100))
+                start = list(a = a_init, c = c_init, d = d_init),
+                control=nls.control(warnOnly=TRUE), 
+                trace = FALSE)
+  if(model_3p$convInfo["stopCode"] != 0 && model_3p$convInfo["stopCode"] != 3) {
+    signalCondition(model_3p$convInfo["stopMessage"])
+  }
   models[["model_3p"]] <- model_3p
   # ---------------------------------------------------------------------------# 
   # Params giving the best fit for the model
@@ -259,7 +302,12 @@ for(language in languages){
   d_init = coef(linear_model)[2] # slope 
   a_init = exp(coef(linear_model)[1]) # e^intercept = a
   model_4p = nls(mean_length~a*log(vertices)+d,data=data,
-                start = list(a = a_init, d = d_init), trace = FALSE)
+                start = list(a = a_init, d = d_init),
+                control=nls.control(warnOnly=TRUE), 
+                trace = FALSE)
+  if(model_4p$convInfo["stopCode"] != 0 && model_4p$convInfo["stopCode"] != 3) {
+    signalCondition(model_4p$convInfo["stopMessage"])
+  }
   models[["model_4p"]] <- model_4p
   # ---------------------------------------------------------------------------# 
   # Params giving the best fit for the model
@@ -316,7 +364,7 @@ for(language in languages){
        xlab = "Vertices", ylab = "Mean dependency length", 
        main = paste("Best AIC for", language, modelNames[which.min(AIC_list)], sep=" "))
   ## best fit plot
-  lines(log(data$vertices), log(fitted(models[[which.min(AIC_list)]])), col = "green")
+  lines(data$vertices, fitted(models[[which.min(AIC_list)]]), col = "green")
   dev.off()
   
   #############################################
@@ -337,14 +385,14 @@ for(language in languages){
   lines(data$vertices, fitted(model_3p), type="l", lty=1, col=7)
   lines(data$vertices, fitted(model_4p), type="l", lty=1, col=8)
   legend("topleft",legend = c("Null Hypothesis",
-                              "Model 1",
-                              "Model 2",
-                              "Model 3",
-                              "Model 4",
-                              "Model 1+",
-                              "Model 2+",
-                              "Model 3+",
-                              "Model 4+"
+                              ifelse(model_1$convInfo["isConv"], "Model 1", "Model 1*"),
+                              ifelse(model_2$convInfo["isConv"], "Model 2", "Model 2*"),
+                              ifelse(model_3$convInfo["isConv"], "Model 3", "Model 3*"),
+                              ifelse(model_4$convInfo["isConv"], "Model 4", "Model 4*"),
+                              ifelse(model_1p$convInfo["isConv"], "Model 1+", "Model 1+*"),
+                              ifelse(model_2p$convInfo["isConv"], "Model 2+", "Model 2+*"),
+                              ifelse(model_3p$convInfo["isConv"], "Model 3+", "Model 3+*"),
+                              ifelse(model_4p$convInfo["isConv"], "Model 4+", "Model 4+*")
                               ),
          col=append(c("grey"),1:8), lty=1
         )
