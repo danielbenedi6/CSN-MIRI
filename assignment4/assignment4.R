@@ -41,31 +41,31 @@ languages = c("Arabic", "Basque", "Catalan",
 table_summary <- r"(\begin{table}[!htb]
 \centering
 \resizebox{\columnwidth}{!}{
-\begin{tabular}{llllll}{
+\begin{tabular}{llllll}
 Language & N & $\mu_n$ & $\sigma_n$ & $\mu_x$ & $\sigma_x$ \\ \hline
 )"
 table_res_se <- r"(\begin{table}[!htb]
 \centering
 \resizebox{\columnwidth}{!}{
-\begin{tabular}{llllllllll}{
+\begin{tabular}{llllllllll}
 Language & 0 & 1 & 2 & 3 & 4 & 1+ & 2+ & 3+ & 4+ \\ \hline
 )"
 table_aic <- r"(\begin{table}[!htb]
 \centering
 \resizebox{\columnwidth}{!}{
-\begin{tabular}{llllllllll}{
+\begin{tabular}{llllllllll}
 Language & 0 & 1 & 2 & 3 & 4 & 1+ & 2+ & 3+ & 4+ \\ \hline
 )"
 table_aic_diff <- r"(\begin{table}[!htb]
 \centering
 \resizebox{\columnwidth}{!}{
-\begin{tabular}{llllllllll}{
+\begin{tabular}{llllllllll}
 Language & 0 & 1 & 2 & 3 & 4 & 1+ & 2+ & 3+ & 4+ \\ \hline
 )"
 table_params <- r"(\begin{table}[!htb]
 \centering
 \resizebox{\columnwidth}{!}{
-\begin{tabular}{lllllllllllllllll}{
+\begin{tabular}{lllllllllllllllll}
          & \multicolumn{16}{l}{Model} \\ \cline{2-17} 
          & \multicolumn{1}{l|}{1} & \multicolumn{2}{l|}{2}     & \multicolumn{2}{l|}{3}     & \multicolumn{1}{l|}{4} & \multicolumn{2}{l|}{1+}    & \multicolumn{3}{l|}{2+}        & \multicolumn{3}{l|}{3+}        & \multicolumn{2}{l}{4+} \\
 Language & \multicolumn{1}{l|}{b} & a & \multicolumn{1}{l|}{b} & a & \multicolumn{1}{l|}{c} & \multicolumn{1}{l|}{a} & b & \multicolumn{1}{l|}{d} & a & b & \multicolumn{1}{l|}{d} & a & c & \multicolumn{1}{l|}{d} & a & d \\ \hline
@@ -423,15 +423,15 @@ for(language in languages){
   ), sep="\n")
   best_AIC <- AIC_list[[which.min(AIC_list)]]
   table_aic_diff <- paste(table_aic_diff, print_row_type2(language,
-                                                          best_AIC - aic_model0, # Model 0
-                                                          best_AIC - aic_model1, # Model 1
-                                                          best_AIC - aic_model2, # Model 2
-                                                          best_AIC - aic_model3, # Model 3
-                                                          best_AIC - aic_model4, # Model 4
-                                                          best_AIC - aic_model1p, # Model 1+
-                                                          best_AIC - aic_model2p, # Model 2+
-                                                          best_AIC - aic_model3p, # Model 3+
-                                                          best_AIC - aic_model4p  # Model 4+
+                                                          aic_model0 - best_AIC, # Model 0
+                                                          aic_model1 - best_AIC, # Model 1
+                                                          aic_model2 - best_AIC, # Model 2
+                                                          aic_model3 - best_AIC, # Model 3
+                                                          aic_model4 - best_AIC, # Model 4
+                                                          aic_model1p - best_AIC, # Model 1+
+                                                          aic_model2p - best_AIC, # Model 2+
+                                                          aic_model3p - best_AIC, # Model 3+
+                                                          aic_model4p - best_AIC  # Model 4+
   ), sep="\n")
   table_params <- paste(table_params, sprintf(r"( %s & \multicolumn{1}{l|}{%.3f} & %.3f & \multicolumn{1}{l|}{%.3f} & %.3f & \multicolumn{1}{l|}{%.3f} & \multicolumn{1}{l|}{%.3f} & %.3f & \multicolumn{1}{l|}{%.3f} & %.3f & %.3f & \multicolumn{1}{l|}{%.3f} & %.3f & %.3f & \multicolumn{1}{l|}{%.3f} & %.3f & %.3f \\)",
                                               language,
