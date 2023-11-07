@@ -70,6 +70,8 @@ table_params <- r"(\begin{table}[!htb]
          & \multicolumn{1}{l|}{1} & \multicolumn{2}{l|}{2}     & \multicolumn{2}{l|}{3}     & \multicolumn{1}{l|}{4} & \multicolumn{2}{l|}{1+}    & \multicolumn{3}{l|}{2+}        & \multicolumn{3}{l|}{3+}        & \multicolumn{2}{l}{4+} \\
 Language & \multicolumn{1}{l|}{b} & a & \multicolumn{1}{l|}{b} & a & \multicolumn{1}{l|}{c} & \multicolumn{1}{l|}{a} & b & \multicolumn{1}{l|}{d} & a & b & \multicolumn{1}{l|}{d} & a & c & \multicolumn{1}{l|}{d} & a & d \\ \hline
 )"
+
+IS_WEIGHTED = FALSE
  
 for(language in languages){
   cat("---------------------------------------------------------------------\n")
@@ -90,6 +92,14 @@ for(language in languages){
   }  else {
     cat("    Homoscedasticity\n")
   }
+  
+  if(IS_WEIGHTED) {
+    weights <- 1/data$vertices
+    weights <- weights/sum(weights)
+  } else {
+    weights <- rep(1., length(data$vertices))
+  }
+  
   models <- list()
   s_list <- list()
   AIC_list <- list()
@@ -100,6 +110,7 @@ for(language in languages){
   b_init = coef(linear_model)[2]
   model_1 = nls(mean_length~(vertices/2)^b,data=data,
                 start = list(b = b_init),
+                weights=weights,
                 control=nls.control(warnOnly=TRUE), 
                 trace = FALSE)
   
@@ -128,6 +139,7 @@ for(language in languages){
   b_init = coef(linear_model)[2]
   model_2 = nls(mean_length~a*vertices^b,data=data,
                 start = list(a = a_init, b = b_init),
+                weights=weights,
                 control=nls.control(warnOnly=TRUE), 
                 trace = FALSE)
   
@@ -157,6 +169,7 @@ for(language in languages){
   a_init = exp(coef(linear_model)[1]) # e^intercept = a
   model_3 = nls(mean_length~a*exp(c*vertices),data=data,
                 start = list(a = a_init, c = c_init),
+                weights=weights,
                 control=nls.control(warnOnly=TRUE), 
                 trace = FALSE)
   
@@ -184,6 +197,7 @@ for(language in languages){
   a_init = exp(coef(linear_model)[1]) # e^intercept = a
   model_4 = nls(mean_length~a*log(vertices),data=data,
                 start = list(a = a_init),
+                weights=weights,
                 control=nls.control(warnOnly=TRUE), 
                 trace = FALSE)
   
@@ -215,6 +229,7 @@ for(language in languages){
   model_1p <- nls(mean_length~(vertices/2)^b + d,data=data,
                   start = list(b = b_init, d = d_init),
                   control=nls.control(warnOnly=TRUE), 
+                  weights=weights,
                   trace = FALSE)
   
   if(model_1p$convInfo["stopCode"] != 0 && model_1p$convInfo["stopCode"] != 3) {
@@ -244,6 +259,7 @@ for(language in languages){
   b_init = coef(linear_model)[2] # b = slope
   model_2p = nls(mean_length~a*vertices^b + d,data=data,
                  start = list(a = a_init, b = b_init, d = d_init),
+                 weights=weights,
                  control=nls.control(warnOnly=TRUE), 
                  trace = FALSE)
   
@@ -274,6 +290,7 @@ for(language in languages){
   a_init = exp(coef(linear_model)[1]) # e^intercept = a
   model_3p = nls(mean_length~a*exp(c*vertices)+d,data=data,
                 start = list(a = a_init, c = c_init, d = d_init),
+                weights=weights,
                 control=nls.control(warnOnly=TRUE), 
                 trace = FALSE)
   if(model_3p$convInfo["stopCode"] != 0 && model_3p$convInfo["stopCode"] != 3) {
@@ -303,6 +320,7 @@ for(language in languages){
   a_init = exp(coef(linear_model)[1]) # e^intercept = a
   model_4p = nls(mean_length~a*log(vertices)+d,data=data,
                 start = list(a = a_init, d = d_init),
+                weights=weights,
                 control=nls.control(warnOnly=TRUE), 
                 trace = FALSE)
   if(model_4p$convInfo["stopCode"] != 0 && model_4p$convInfo["stopCode"] != 3) {
@@ -347,7 +365,7 @@ for(language in languages){
   ### wrt to s_value
   cat("Model with best s error: ", modelNames[which.min(s_list)], "\n")
   ## empirical data plot
-  pdf(paste("./plot/",language,"_best_s.pdf", sep=""))
+  pdf(paste("./plot/",language,ifelse(IS_WEIGHTED,"_best_s_weighted.pdf","_best_s.pdf"), sep=""))
   plot(data$vertices, data$mean_length, log="xy",
        xlab = "Vertices", ylab = "Mean dependency length", 
        main = paste("Best s for", language, modelNames[which.min(s_list)], sep=" "))
@@ -359,7 +377,7 @@ for(language in languages){
   ###  wrt to AIC value
   cat("Model with best AIC: ", modelNames[which.min(AIC_list)], "\n")
   ## empirical data plot
-  pdf(paste("./plot/",language,"_best_aic.pdf", sep=""))
+  pdf(paste("./plot/",language,ifelse(IS_WEIGHTED, "_best_aic_weighted.pdf", "_best_aic.pdf"), sep=""))
   plot(data$vertices, (data$mean_length), log="xy",
        xlab = "Vertices", ylab = "Mean dependency length", 
        main = paste("Best AIC for", language, modelNames[which.min(AIC_list)], sep=" "))
@@ -371,7 +389,7 @@ for(language in languages){
   #############################################
   #############################################
   
-  pdf(paste("./plot/",language,"_all_models.pdf", sep=""))
+  pdf(paste("./plot/",language,ifelse(IS_WEIGHTED, "_all_models_weighted.pdf", "_all_models.pdf"), sep=""))
   #plot(dataset$vertices, dataset$mean_length, ylab="Mean Length", xlab="Vertices", log="xy")
   plot(data$vertices, data$mean_length, ylab="Mean Length", xlab="Vertices", log="xy")
   #lines(data$vertices, data$mean_length, type="l", lty=2, col="green")
@@ -397,6 +415,13 @@ for(language in languages){
          col=append(c("grey"),1:8), lty=1
         )
   title(main=paste("Models for mean length dependency for ", language))
+  dev.off()
+  
+  
+  pdf(paste("./plot/",language,"_dataset.pdf", sep=""))
+  plot(dataset$vertices, dataset$mean_length, ylab="Mean Length", xlab="Vertices", log="xy")
+  lines(data$vertices, data$mean_length, type="l", lty=2, col="green")
+  title(main=paste("Input data and its mean for ", language))
   dev.off()
   
   table_res_se <- paste(table_res_se, print_row_type2(language,
@@ -463,10 +488,10 @@ table_params <- paste(table_params, r"(\end{tabular}}
 \end{table})",sep="\n")
 
 write(table_summary, file="./table/summary.tex")
-write(table_res_se, file="./table/res_se.tex")
-write(table_aic, file="./table/aic.tex")
-write(table_aic_diff, file="./table/aic_diff.tex")
-write(table_params, file="./table/params.tex")
+write(table_res_se, file=ifelse(IS_WEIGHTED, "./table/res_se_weighted.tex", "./table/res_se.tex"))
+write(table_aic, file=ifelse(IS_WEIGHTED, "./table/aic_weighted.tex", "./table/aic.tex"))
+write(table_aic_diff, file=ifelse(IS_WEIGHTED, "./table/aic_diff_weighted.tex", "./table/aic_diff.tex"))
+write(table_params, file=ifelse(IS_WEIGHTED, "./table/params_weighted.tex", "./table/params.tex"))
 
 # residual standard error 
 # - measures the standard deviation of the residuals in a regression model
