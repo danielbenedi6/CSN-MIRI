@@ -55,14 +55,14 @@ Language & 0 & 1 & 2 & 3 & 4 & 5 & 1+ & 2+ & 3+ & 4+ & 5+ \\ \hline
 table_aic <- r"(\begin{table}[!htb]
 \centering
 \resizebox{\columnwidth}{!}{
-\begin{tabular}{llllllllll}
+\begin{tabular}{llllllllllll}
 Language & 0 & 1 & 2 & 3 & 4 & 5 & 1+ & 2+ & 3+ & 4+ & 5+ \\ \hline
 )"
 table_aic_diff <- r"(\begin{table}[!htb]
 \centering
 \resizebox{\columnwidth}{!}{
-\begin{tabular}{llllllllll}
-Language & 0 & 1 & 2 & 3 & 4 & 5 & 1+ & 2+ & 3+ & 4+ & 5+\\ \hline
+\begin{tabular}{llllllllllll}
+Language & 0 & 1 & 2 & 3 & 4 & 5 & 1+ & 2+ & 3+ & 4+ & 5+ \\ \hline
 )"
 table_params <- r"(\begin{table}[!htb]
 \centering
@@ -224,13 +224,13 @@ for(language in languages){
   # f(n) = a n^b e^(cn)
   linear_model = lm(log(mean_length)~vertices+log(vertices), data=data)
   a_init = exp(coef(linear_model)[1]) # e^intercept = a
-  b_init = coef(linear_model)[2] # b
-  c_init = coef(linear_model)[3] # c
+  b_init = coef(linear_model)[3] # b
+  c_init = coef(linear_model)[2] # c
   model_5 = nls(mean_length~a*vertices^b*exp(c*vertices),data=data,
                 start = list(a = a_init, b = b_init, c = c_init),
                 weights=weights,
-                #control=nls.control(warnOnly=TRUE), 
-                trace = TRUE)
+                control=nls.control(warnOnly=TRUE), 
+                trace = FALSE)
   
   if(model_5$convInfo["stopCode"] != 0 && model_5$convInfo["stopCode"] != 3) {
     signalCondition(model_5$convInfo["stopMessage"])
@@ -379,8 +379,8 @@ for(language in languages){
   d_init = min(data$mean_length) - 0.001
   linear_model = lm(log(mean_length-d_init)~vertices+log(vertices), data=data)
   a_init = exp(coef(linear_model)[1]) # e^intercept = a
-  b_init = coef(linear_model)[2] # b
-  c_init = coef(linear_model)[3] # c
+  b_init = coef(linear_model)[3] # b
+  c_init = coef(linear_model)[2] # c
   model_5p = nls(mean_length~a*vertices^b*exp(c*vertices)+d,data=data,
                 start = list(a = a_init, b = b_init, c = c_init, d = d_init),
                 weights=weights,
@@ -463,21 +463,25 @@ for(language in languages){
   lines(data$vertices, fitted(model_2), type="l", lty=1, col=2)
   lines(data$vertices, fitted(model_3), type="l", lty=1, col=3)
   lines(data$vertices, fitted(model_4), type="l", lty=1, col=4)
-  lines(data$vertices, fitted(model_1p), type="l", lty=1, col=5)
-  lines(data$vertices, fitted(model_2p), type="l", lty=1, col=6)
-  lines(data$vertices, fitted(model_3p), type="l", lty=1, col=7)
-  lines(data$vertices, fitted(model_4p), type="l", lty=1, col=8)
+  lines(data$vertices, fitted(model_5), type="l", lty=1, col=5)
+  lines(data$vertices, fitted(model_1p), type="l", lty=1, col=6)
+  lines(data$vertices, fitted(model_2p), type="l", lty=1, col=7)
+  lines(data$vertices, fitted(model_3p), type="l", lty=1, col=8)
+  lines(data$vertices, fitted(model_4p), type="l", lty=1, col=9)
+  lines(data$vertices, fitted(model_5p), type="l", lty=1, col=10)
   legend("topleft",legend = c("Null Hypothesis",
                               ifelse(model_1$convInfo["isConv"], "Model 1", "Model 1*"),
                               ifelse(model_2$convInfo["isConv"], "Model 2", "Model 2*"),
                               ifelse(model_3$convInfo["isConv"], "Model 3", "Model 3*"),
                               ifelse(model_4$convInfo["isConv"], "Model 4", "Model 4*"),
+                              ifelse(model_5$convInfo["isConv"], "Model 5", "Model 5*"),
                               ifelse(model_1p$convInfo["isConv"], "Model 1+", "Model 1+*"),
                               ifelse(model_2p$convInfo["isConv"], "Model 2+", "Model 2+*"),
                               ifelse(model_3p$convInfo["isConv"], "Model 3+", "Model 3+*"),
-                              ifelse(model_4p$convInfo["isConv"], "Model 4+", "Model 4+*")
+                              ifelse(model_4p$convInfo["isConv"], "Model 4+", "Model 4+*"),
+                              ifelse(model_5p$convInfo["isConv"], "Model 5+", "Model 5+*")
                               ),
-         col=append(c("grey"),1:8), lty=1
+         col=append(c("grey"),1:10), lty=1
         )
   title(main=paste("Models for mean length dependency for ", language))
   dev.off()
@@ -495,21 +499,25 @@ for(language in languages){
                                                       s_model2, # Model 2
                                                       s_model3, # Model 3
                                                       s_model4, # Model 4
+                                                      s_model5, # Model 5
                                                       s_model1p, # Model 1+
                                                       s_model2p, # Model 2+
                                                       s_model3p, # Model 3+
-                                                      s_model4p  # Model 4+
+                                                      s_model4p,  # Model 4+
+                                                      s_model5p  # Model 5+
   ), sep="\n")
   table_aic <- paste(table_aic, print_row_type2(language,
                                                       aic_model0, # Model 0
                                                       aic_model1, # Model 1
                                                       aic_model2, # Model 2
                                                       aic_model3, # Model 3
-                                                      aic_model4, # Model 4
+                                                aic_model4, # Model 4
+                                                aic_model5, # Model 4
                                                       aic_model1p, # Model 1+
                                                       aic_model2p, # Model 2+
                                                       aic_model3p, # Model 3+
-                                                      aic_model4p  # Model 4+
+                                                aic_model4p,  # Model 4+
+                                                aic_model5p  # Model 4+
   ), sep="\n")
   best_AIC <- AIC_list[[which.min(AIC_list)]]
   table_aic_diff <- paste(table_aic_diff, print_row_type2(language,
@@ -518,10 +526,12 @@ for(language in languages){
                                                           aic_model2 - best_AIC, # Model 2
                                                           aic_model3 - best_AIC, # Model 3
                                                           aic_model4 - best_AIC, # Model 4
+                                                          aic_model5 - best_AIC, # Model 5
                                                           aic_model1p - best_AIC, # Model 1+
                                                           aic_model2p - best_AIC, # Model 2+
                                                           aic_model3p - best_AIC, # Model 3+
-                                                          aic_model4p - best_AIC  # Model 4+
+                                                          aic_model4p - best_AIC,  # Model 4+
+                                                          aic_model5p - best_AIC  # Model 4+
   ), sep="\n")
   table_params <- paste(table_params, sprintf(r"( %s & \multicolumn{1}{l|}{%.3f} & %.3f & \multicolumn{1}{l|}{%.3f} & %.3f & \multicolumn{1}{l|}{%.3f} & \multicolumn{1}{l|}{%.3f} & %.3f & %.3f & \multicolumn{1}{l|}{%.3f} & %.3f & \multicolumn{1}{l|}{%.3f} & %.3f & %.3f & \multicolumn{1}{l|}{%.3f} & %.3f & %.3f & \multicolumn{1}{l|}{%.3f} & %.3f & %.3f  & %.3f & %.3f & %.3f & \multicolumn{1}{l|}{%.3f}\\)",
                                               language,
