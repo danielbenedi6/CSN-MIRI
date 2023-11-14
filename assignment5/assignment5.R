@@ -3,12 +3,14 @@ library(clustAnalytics)
 
 jaccard_sim <- function(left, right) {
   M = matrix(nrow=length(left), ncol=length(right))
-  
-  for(cluster1 in unique(unname(membership(left))) ) {
-    for(cluster2 in unique(unname(membership(right))) ) {
-      intersection = length(intersect(left[cluster1], right[cluster2]))
-      union = length(left[cluster1]) + length(right[cluster2]) / intersection
-      M[cluster1,cluster2] <- intersection/union
+
+  for(cluster1 in 1:length(left) ) {
+    for(cluster2 in  1:length(right)  ) {
+      c1 = unlist(groups(left)[cluster1])
+      c2 = unlist(groups(right)[cluster2])
+      i = length(intersect(c1,c2))
+      u = length(union(c1,c2))
+      M[cluster1,cluster2] <- i/u
     } 
   }
   
@@ -16,6 +18,15 @@ jaccard_sim <- function(left, right) {
   colnames(M) <-  1:length(right)
   M
 }
+
+best_indices <- function(JC) {
+  return(apply(JC,1,which.max))
+}
+
+cluster_weights <- function(clustering) {
+  sizes(clustering) / sum(sizes(clustering))
+}
+
 
 data(karate, package="igraphdata")
 karate <- upgrade_graph(karate)
