@@ -27,6 +27,20 @@ cluster_weights <- function(clustering) {
   sizes(clustering) / sum(sizes(clustering))
 }
 
+match_clusters <- function(JC, name1, name2) {
+  best_values <- apply(JC,1,max)
+  df <- as.data.frame(rbind(best_values), stringsAsFactors = FALSE)
+  best_id <- best_indices(JC)
+  names <- sapply(1:nrow(JC), function(i) {paste(name1,".", i, ", ", name2,".", best_id[i], sep="")})
+  colnames(df) <- names
+  return(df)
+}
+
+Wmean <- function(MC, weights) {
+  weighted.mean(MC[1,], weights)
+}
+
+Wmean(match_clusters(jaccard_sim(fc,wc), "FC", "WC"),cluster_weights(fc) )
 
 data(karate, package="igraphdata")
 karate <- upgrade_graph(karate)
@@ -44,28 +58,29 @@ dendPlot(fc)
 plot(fc, karate)
 
 
-M <- as_adjacency_matrix(as.undirected(karate, mode="each"))
+# 
+# M <- as_adjacency_matrix(as.undirected(karate, mode="each"))
+# 
+# evaluate_significance(karate, 
+#                       alg_list=list(
+#                         Louvain=cluster_louvain,
+#                         "label prop"=cluster_label_prop,
+#                         walktrap=cluster_walktrap,
+#                         fastgreedy=fastgreedy.community
+#                       ),
+#                       gt_clustering = V(karate)$Faction
+# )
 
-evaluate_significance(karate, 
-                      alg_list=list(
-                        Louvain=cluster_louvain,
-                        "label prop"=cluster_label_prop,
-                        walktrap=cluster_walktrap,
-                        fastgreedy=fastgreedy.community
-                      ),
-                      gt_clustering = V(karate)$Faction
-)
-
-plot(karate, vertex.color=V(karate)$Faction)
-
-B <- matrix(c(1, 0.2, 0.2, 1), ncol=2)
-G <- barabasi_albert_blocks(
-        m=4,
-        p=c(0.5,0.5),
-        B=B,
-        t_max=100,
-        type="Hajek",
-        sample_with_replacement = FALSE
-      )
-plot(G, vertex.color=(V(G)$label),vertex.label=NA,vertex.size=10)
+# plot(karate, vertex.color=V(karate)$Faction)
+# 
+# B <- matrix(c(1, 0.2, 0.2, 1), ncol=2)
+# G <- barabasi_albert_blocks(
+#         m=4,
+#         p=c(0.5,0.5),
+#         B=B,
+#         t_max=100,
+#         type="Hajek",
+#         sample_with_replacement = FALSE
+#       )
+# plot(G, vertex.color=(V(G)$label),vertex.label=NA,vertex.size=10)
 
