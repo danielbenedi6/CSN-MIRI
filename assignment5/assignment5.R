@@ -40,6 +40,48 @@ Wmean <- function(MC, weights) {
   weighted.mean(MC[1,], weights)
 }
 
+evaluate <- function(graph, methods) {
+  
+  D <- data.frame(
+    method = names(methods),
+    result = sapply(methods, function(f) f(graph), simplify = FALSE)
+  )
+   
+  # louvain <- cluster_louvain(graph)
+  # label_prop <- cluster_label_prop(graph)
+  # walktrap <- cluster_walktrap(graph)
+  # edge_betweenness <- cluster_edge_betweenness(graph)
+  # fast_greedy <- cluster_fast_greedy(graph)
+  # spinglass <- cluster_spinglass(graph)
+  
+  if(is.nul(V(G)$Faction)) {
+    # TODO: Change to proper selection method
+    BASELINE <- D$result[1]
+    label2 <- D$method[1]
+  } else {
+    BASELINE <- V(G)$Faction
+    label2 <- "Ground Truth"
+  }
+  
+  for(method1 in methods) {
+     # Compare method1 with BASELINE
+  }
+  
+  
+}
+
+E <- evaluate(
+        karate,
+        list(
+          "Louvain" = cluster_louvain,
+          "Label Propagation" = cluster_label_prop,
+          "Walktrap" = cluster_walktrap,
+          "Edge Betweenness" = cluster_edge_betweenness,
+          "Fast Greedy" = cluster_fast_greedy,
+          "Spin-Glass" = cluster_spinglass
+        )
+)
+
 Wmean(match_clusters(jaccard_sim(fc,wc), "FC", "WC"),cluster_weights(fc) )
 
 data(karate, package="igraphdata")
@@ -62,13 +104,13 @@ plot(fc, karate)
 # M <- as_adjacency_matrix(as.undirected(karate, mode="each"))
 # 
 # evaluate_significance(karate, 
-#                       alg_list=list(
-#                         Louvain=cluster_louvain,
-#                         "label prop"=cluster_label_prop,
-#                         walktrap=cluster_walktrap,
-#                         fastgreedy=fastgreedy.community
-#                       ),
-#                       gt_clustering = V(karate)$Faction
+#                     alg_list=list(
+#                        Louvain=cluster_louvain,
+#                        "label prop"=cluster_label_prop,
+#                        walktrap=cluster_walktrap,
+#                        fastgreedy=fastgreedy.community
+#                      ),
+#                      gt_clustering = V(karate)$Faction
 # )
 
 # plot(karate, vertex.color=V(karate)$Faction)
