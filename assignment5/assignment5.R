@@ -41,33 +41,23 @@ Wmean <- function(MC, weights) {
 }
 
 evaluate <- function(graph, methods) {
+  D <- data.frame(matrix(ncol = 0, nrow = 1))
   
-  D <- data.frame(
-    method = names(methods),
-    result = sapply(methods, function(f) f(graph), simplify = FALSE)
-  )
-   
-  # louvain <- cluster_louvain(graph)
-  # label_prop <- cluster_label_prop(graph)
-  # walktrap <- cluster_walktrap(graph)
-  # edge_betweenness <- cluster_edge_betweenness(graph)
-  # fast_greedy <- cluster_fast_greedy(graph)
-  # spinglass <- cluster_spinglass(graph)
-  
-  if(is.nul(V(G)$Faction)) {
+  if(is.null(V(graph)$Faction)) {
     # TODO: Change to proper selection method
-    BASELINE <- D$result[1]
+    BASELINE <- unlist(methods)[[1]](graph)
     label2 <- D$method[1]
   } else {
-    BASELINE <- V(G)$Faction
+    BASELINE <- make_clusters(graph, membership = setNames(V(graph)$Faction, names(V(graph))))
     label2 <- "Ground Truth"
   }
   
-  for(method1 in methods) {
-     # Compare method1 with BASELINE
+  for(method_name in names(methods)) {
+    clustered <- methods[[method_name]](graph)
+    global_jaccard <- Wmean(match_clusters(jaccard_sim(clustered, BASELINE), method_name, "baseline"), cluster_weights(clustered))
+    D[method_name] = c(global_jaccard)
   }
-  
-  
+  return(D)
 }
 
 E <- evaluate(
@@ -82,22 +72,22 @@ E <- evaluate(
         )
 )
 
-Wmean(match_clusters(jaccard_sim(fc,wc), "FC", "WC"),cluster_weights(fc) )
-
-data(karate, package="igraphdata")
-karate <- upgrade_graph(karate)
-
-
-wc <- walktrap.community(karate)
-modularity(wc)
-unname(membership(wc))
-plot(wc,karate)
-
-
-fc <- fastgreedy.community(karate)
-modularity(fc)
-dendPlot(fc)
-plot(fc, karate)
+# Wmean(match_clusters(jaccard_sim(fc,wc), "FC", "WC"),cluster_weights(fc) )
+# 
+# data(karate, package="igraphdata")
+# karate <- upgrade_graph(karate)
+# 
+# 
+# wc <- walktrap.community(karate)
+# modularity(wc)
+# unname(membership(wc))
+# plot(wc,karate)
+# 
+# 
+# fc <- fastgreedy.community(karate)
+# modularity(fc)
+# dendPlot(fc)
+# plot(fc, karate)
 
 
 # 
