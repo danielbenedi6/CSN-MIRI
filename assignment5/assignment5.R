@@ -94,6 +94,8 @@ E <- evaluate(
         )
 )
 
+DBPL <- G <- load_network("./data/com-dblp.ungraph.txt","./data/com-dblp.top5000.cmty.txt")
+
 # Wmean(match_clusters(jaccard_sim(fc,wc), "FC", "WC"),cluster_weights(fc) )
 # 
 # data(karate, package="igraphdata")
