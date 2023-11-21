@@ -1,6 +1,7 @@
 library(igraph)
 library(clustAnalytics)
 library(stringr)
+library(xtable)
 
 load_network <- function(network, ground_truth) {
   G <- read_graph(network, format="edgelist", n=0, directed=FALSE)
@@ -18,6 +19,8 @@ load_network <- function(network, ground_truth) {
       }
     }
   }
+  
+  return(G)
 }
 
 jaccard_sim <- function(left, right) {
@@ -59,7 +62,7 @@ Wmean <- function(MC, weights) {
   weighted.mean(MC[1,], weights)
 }
 
-evaluate <- function(graph, methods) {
+evaluate <- function(graph, methods, name) {
   D <- data.frame(matrix(ncol = 0, nrow = 1))
   
   # Note: Barabasi-Albert does not store in Faction
@@ -70,73 +73,121 @@ evaluate <- function(graph, methods) {
     BASELINE <- unlist(methods)[[1]](graph)
     label2 <- D$method[1]
   } else {
-    BASELINE <- make_clusters(graph, membership = setNames(V(graph)$Faction, names(V(graph))))
+    V(graph)$label <- V(graph)$Faction
+    BASELINE <- make_clusters(graph, membership = V(graph)$Faction)
     label2 <- "Ground Truth"
   }
   
+  pdf(paste("./plot/",name,"_baseline.pdf", sep=""))
+  plot(BASELINE, graph)
+  dev.off()
+  
   for(method_name in names(methods)) {
     clustered <- methods[[method_name]](graph)
-    global_jaccard <- Wmean(match_clusters(jaccard_sim(clustered, BASELINE), method_name, "baseline"), cluster_weights(clustered))
+    global_jaccard <- Wmean(match_clusters(jaccard_sim(clustered, BASELINE), method_name, label2), cluster_weights(clustered))
     D[method_name] = c(global_jaccard)
+    
+    pdf(paste("./plot/",name,"_",method_name,".pdf", sep=""))
+    plot(clustered, graph)
+    dev.off()
   }
   return(D)
 }
 
-E <- evaluate(
-        karate,
-        list(
-          "Louvain" = cluster_louvain,
-          "Label Propagation" = cluster_label_prop,
-          "Walktrap" = cluster_walktrap,
-          "Edge Betweenness" = cluster_edge_betweenness,
-          "Fast Greedy" = cluster_fast_greedy,
-          "Spin-Glass" = cluster_spinglass
-        )
+# Case 1
+
+data(karate, package="igraphdata")
+karate <- upgrade_graph(karate)
+
+E_karate <- evaluate(
+  karate,
+  list(
+    "Louvain" = cluster_louvain,
+    "Label Propagation" = cluster_label_prop,
+    "Walktrap" = cluster_walktrap,
+    "Edge Betweenness" = cluster_edge_betweenness,
+    "Fast Greedy" = cluster_fast_greedy,
+    "Spin-Glass" = cluster_spinglass
+  ),
+  "karate"
 )
 
-DBPL <- G <- load_network("./data/com-dblp.ungraph.txt","./data/com-dblp.top5000.cmty.txt")
+# Case 2
 
-# Wmean(match_clusters(jaccard_sim(fc,wc), "FC", "WC"),cluster_weights(fc) )
-# 
-# data(karate, package="igraphdata")
-# karate <- upgrade_graph(karate)
-# 
-# 
-# wc <- walktrap.community(karate)
-# modularity(wc)
-# unname(membership(wc))
-# plot(wc,karate)
-# 
-# 
-# fc <- fastgreedy.community(karate)
-# modularity(fc)
-# dendPlot(fc)
-# plot(fc, karate)
+num_vertices = 100
+added_edges = 4 # num_vertices = added_edges * num_vertices
+num_clusters = 2
+
+# All clusters have the same probability, we could change this
+cluster_probabilities = rep(1/num_clusters, num_clusters)
+
+# Affinity blocks
+B <- matrix(c(1, 0.1, 0.1, 1), ncol=num_clusters)
+
+BA <- barabasi_albert_blocks(
+       m=added_edges,
+       p=cluster_probabilities,
+       B=B,
+       t_max=num_vertices,
+       type="Hajek",
+       sample_with_replacement = FALSE
+     )
+V(BA)$Faction <- V(BA)$label
+
+E_BA <- evaluate(
+  BA,
+  list(
+    "Louvain" = cluster_louvain,
+    "Label Propagation" = cluster_label_prop,
+    "Walktrap" = cluster_walktrap,
+    "Edge Betweenness" = cluster_edge_betweenness,
+    "Fast Greedy" = cluster_fast_greedy,
+    "Spin-Glass" = cluster_spinglass
+  ),
+  "BA"
+)
+
+# Case 3
+
+data(enron, package="igraphdata")
+enron <- upgrade_graph(enron)
+enron <- as.undirected(enron, mode="collapse")
 
 
-# 
-# M <- as_adjacency_matrix(as.undirected(karate, mode="each"))
-# 
-# evaluate_significance(karate, 
-#                     alg_list=list(
-#                        Louvain=cluster_louvain,
-#                        "label prop"=cluster_label_prop,
-#                        walktrap=cluster_walktrap,
-#                        fastgreedy=fastgreedy.community
-#                      ),
-#                      gt_clustering = V(karate)$Faction
-# )
+E_enron <- evaluate(
+  enron,
+  list(
+    "Louvain" = cluster_louvain,
+    "Label Propagation" = cluster_label_prop,
+    "Walktrap" = cluster_walktrap,
+    "Edge Betweenness" = cluster_edge_betweenness,
+    "Fast Greedy" = cluster_fast_greedy,
+    "Spin-Glass" = cluster_spinglass
+  ),
+  "enron"
+)
 
-# plot(karate, vertex.color=V(karate)$Faction)
-# 
-# B <- matrix(c(1, 0.2, 0.2, 1), ncol=2)
-# G <- barabasi_albert_blocks(
-#         m=4,
-#         p=c(0.5,0.5),
-#         B=B,
-#         t_max=100,
-#         type="Hajek",
-#         sample_with_replacement = FALSE
-#       )
-# plot(G, vertex.color=(V(G)$label),vertex.label=NA,vertex.size=10)
+# Case 4
 
+#DBLP <- load_network("./data/com-dblp.ungraph.txt","./data/com-dblp.top5000.cmty.txt")
+DBLP <- load_network("./data/com-dblp.ungraph.txt")
+
+
+E_DBLP<- evaluate(
+  DBLP,
+  list(
+    "Louvain" = cluster_louvain,
+    "Label Propagation" = cluster_label_prop,
+    "Walktrap" = cluster_walktrap,
+    "Edge Betweenness" = cluster_edge_betweenness,
+    "Fast Greedy" = cluster_fast_greedy,
+    "Spin-Glass" = cluster_spinglass
+  ),
+  "dblp"
+)
+
+# Table
+
+evals <- rbind(E_karate,E_BA, E_enron, E_DBLP)
+rownames(evals) <- c("karate", "Barabasi-Albert", "ENRON", "DBLP")
+print(xtable(evals, type="latex", auto=TRUE))
