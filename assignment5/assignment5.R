@@ -1,5 +1,24 @@
 library(igraph)
 library(clustAnalytics)
+library(stringr)
+
+load_network <- function(network, ground_truth) {
+  G <- read_graph(network, format="edgelist", n=0, directed=FALSE)
+  if(!missing(ground_truth)) {
+    # Read ground truth file as list of lists
+    GT <- sapply(str_split(readLines(ground_truth),"\t"),as.numeric)
+    # Note:
+    # We consider that communities are no overlapping
+    G$Faction <- rep(-1, vcount(G))
+    
+    # This is too slow, anything better?
+    for(cluster in 1:length(GT)) {
+      for(vertex in GT[[cluster]]) {
+        G$Faction[vertex] <- cluster
+      }
+    }
+  }
+}
 
 jaccard_sim <- function(left, right) {
   M = matrix(nrow=length(left), ncol=length(right))
@@ -43,6 +62,9 @@ Wmean <- function(MC, weights) {
 evaluate <- function(graph, methods) {
   D <- data.frame(matrix(ncol = 0, nrow = 1))
   
+  # Note: Barabasi-Albert does not store in Faction
+  #       it should be adapted the graph before calling
+  #       this method.
   if(is.null(V(graph)$Faction)) {
     # TODO: Change to proper selection method
     BASELINE <- unlist(methods)[[1]](graph)
