@@ -106,10 +106,28 @@ evaluate <- function(graph, methods, name) {
   return(D)
 }
 
+set.seed(0)
+
+summary <- data.frame(
+              "Network"=character(),
+              "Vertices"=integer(),
+              "Edges"=integer(),
+              "Mean Degree"=double(),
+              "Density"=double()
+          )
+
 # Case 1
 
 data(karate, package="igraphdata")
 karate <- upgrade_graph(karate)
+
+summary[nrow(summary) + 1,] = c(
+    "Karate",
+    length(V(karate)),
+    length(E(karate)),
+    round(mean(degree(karate)),digits=4),
+    round(edge_density(karate),digits=4)
+)
 
 E_karate <- evaluate(
   karate,
@@ -146,6 +164,14 @@ BA <- barabasi_albert_blocks(
      )
 V(BA)$Faction <- V(BA)$label
 
+summary[nrow(summary) + 1,] = c(
+  "Barabasi-Albert",
+  length(V(BA)),
+  length(E(BA)),
+  round(mean(degree(BA)),digits=4),
+  round(edge_density(BA),digits=4)
+)
+
 E_BA <- evaluate(
   BA,
   list(
@@ -171,6 +197,13 @@ enron <- simplify(enron)
 # We opted to simply remove them
 enron <- ensure_connectedness(enron)
 
+summary[nrow(summary) + 1,] = c(
+  "ENRON",
+  length(V(enron)),
+  length(E(enron)),
+  round(mean(degree(enron)),digits=4),
+  round(edge_density(enron),digits=4)
+)
 E_enron <- evaluate(
   enron,
   list(
@@ -195,9 +228,25 @@ DBLP <- load_network("./data/com-dblp.ungraph.txt")
 DBLP <- ensure_connectedness(DBLP)
 
 # Random subgraph to easy execution
-DBLP <- induced_subgraph(DBLP, sample(1:vcount(DBLP), floor(0.1*vcount(DBLP))))
+DBLP = induced_subgraph(
+                  DBLP,
+                  random_walk(
+                     DBLP,
+                     start=1,
+                     steps=floor(0.1*vcount(DBLP))
+                   )
+                 )
+
+#DBLP <- induced_subgraph(DBLP, sample(1:vcount(DBLP), floor(0.1*vcount(DBLP))))
 DBLP <- ensure_connectedness(DBLP)
 
+summary[nrow(summary) + 1,] = c(
+  "DBLP",
+  length(V(DBLP)),
+  length(E(DBLP)),
+  round(mean(degree(DBLP)),digits=4),
+  round(edge_density(DBLP),digits=4)
+)
 E_DBLP<- evaluate(
   DBLP,
   list(
@@ -216,4 +265,5 @@ E_DBLP<- evaluate(
 evals <- rbind(E_karate,E_BA, E_enron, E_DBLP)
 rownames(evals) <- c("karate", "Barabasi-Albert", "ENRON", "DBLP")
 
+print(xtable(summary, type="latex", auto=TRUE),  include.rownames=FALSE, file="./table/summary.tex")
 print(xtable(evals, type="latex", auto=TRUE), file="./table/evaluations.tex")
