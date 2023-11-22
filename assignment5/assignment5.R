@@ -5,6 +5,8 @@ library(xtable)
 
 load_network <- function(network, ground_truth) {
   G <- read_graph(network, format="edgelist", n=0, directed=FALSE)
+  G <- simplify(G)
+  
   if(!missing(ground_truth)) {
     # Read ground truth file as list of lists
     GT <- sapply(str_split(readLines(ground_truth),"\t"),as.numeric)
@@ -21,6 +23,16 @@ load_network <- function(network, ground_truth) {
   }
   
   return(G)
+}
+
+ensure_connectedness <- function(network) {
+  if(!is_connected(network)) {
+    comps <- components(network)
+    lcc <- which.max(comps$csize)
+    network <- induced_subgraph(network, V(network)[comps$membership == lcc])
+  }
+  
+  network
 }
 
 jaccard_sim <- function(left, right) {
@@ -152,7 +164,12 @@ E_BA <- evaluate(
 data(enron, package="igraphdata")
 enron <- upgrade_graph(enron)
 enron <- as.undirected(enron, mode="collapse")
+enron <- simplify(enron)
 
+# ENRON is not connected
+# There are only two nodes disconnected.
+# We opted to simply remove them
+enron <- ensure_connectedness(enron)
 
 E_enron <- evaluate(
   enron,
@@ -172,6 +189,10 @@ E_enron <- evaluate(
 #DBLP <- load_network("./data/com-dblp.ungraph.txt","./data/com-dblp.top5000.cmty.txt")
 DBLP <- load_network("./data/com-dblp.ungraph.txt")
 
+# DBLP is not connected
+# All the disconnected components have size 1
+# We opted to simply remove them
+DBLP <- ensure_connectedness(DBLP)
 
 E_DBLP<- evaluate(
   DBLP,
