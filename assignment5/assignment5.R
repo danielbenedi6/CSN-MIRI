@@ -194,6 +194,10 @@ DBLP <- load_network("./data/com-dblp.ungraph.txt")
 # We opted to simply remove them
 DBLP <- ensure_connectedness(DBLP)
 
+# Random subgraph to easy execution
+DBLP <- induced_subgraph(DBLP, sample(1:vcount(DBLP), floor(0.1*vcount(DBLP))))
+DBLP <- ensure_connectedness(DBLP)
+
 E_DBLP<- evaluate(
   DBLP,
   list(
@@ -211,4 +215,5 @@ E_DBLP<- evaluate(
 
 evals <- rbind(E_karate,E_BA, E_enron, E_DBLP)
 rownames(evals) <- c("karate", "Barabasi-Albert", "ENRON", "DBLP")
-print(xtable(evals, type="latex", auto=TRUE))
+
+print(xtable(evals, type="latex", auto=TRUE), file="./table/evaluations.tex")
