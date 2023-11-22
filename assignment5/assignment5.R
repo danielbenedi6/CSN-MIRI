@@ -157,10 +157,10 @@ num_clusters = 4
 cluster_probabilities = rep(1/num_clusters, num_clusters)
 
 # Affinity blocks
-B <- matrix(c(1, 0.1, 0.1, 1,
-              1, 0.1, 0.1, 1,
-              1, 0.1, 0.1, 1,
-              1, 0.1, 0.1, 1), ncol=num_clusters)
+B <- matrix(c(1.0, 0.1, 0.1, 0.1,
+              0.1, 1.0, 0.1, 0.1,
+              0.1, 0.1, 1.0, 0.1,
+              0.1, 0.1, 0.1, 1.0), ncol=num_clusters)
 
 BA <- barabasi_albert_blocks(
        m=added_edges,
