@@ -29,23 +29,30 @@ def ba_model(tmax, n0, m0):
         n += 1
         
         for i in range(int(math.log10(tmax))):
-            evolution[i][t] = evolution[i][t-1] + new_stubs.count(10**i+n-1)
+            evolution[i][t] = evolution[i][t-1] + new_stubs.count(10**i+n0-1)
 
     return evolution,degree_sequence(stubs,n)
 
-tmax = int(10e5)
-rep = 100
-
-for _ in range(rep):
-	evolution,deg_seq = ba_model(tmax, 10, 3)
-	with open("./data/full_ba_deg_seq.txt","a") as f:
+def experiment(prefix, method, tmax):
+	evolution,deg_seq = method(tmax, 10, 3)
+	with open("./data/%s_deg_seq.txt"%(prefix),"a") as f:
+        # Each line of the file represents one repetition of the experiment
+        # and each line contains the degree sequence of the final graph
 	    for deg in deg_seq:
 	        f.write("%i "%(deg))
 	    f.write("\n")
 	
 	for i in range(int(math.log10(tmax))):
-	    with open("./data/full_ba_evolution_%i.txt"%(10**i),"a") as f:
+	    with open("./data/%s_evolution_%i.txt"%(prefix,10**i),"a") as f:
+            # Each line of the file represents one repetition of the experiment
+            # and each line contains the evolution of the i-th arrived node
 	        for deg in evolution[i]:
 	            f.write("%i "%(deg))
 	        f.write("\n")
+
+tmax = int(10e5)
+rep = 100
+
+for _ in range(rep):
+    experiment("full_ba", ba_model, tmax)
 
