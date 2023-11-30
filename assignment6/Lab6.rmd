@@ -1,0 +1,378 @@
+# Lab 6
+
+## Data preparation
+
+```{r}
+#library(car)
+require(minpack.lm)
+library("stats4") # for MLE
+library("VGAM") # for the Riemann-zeta function
+```
+
+# Degree sequence
+
+```{r}
+# Read data
+degsec_BA <- read.csv('data/full_ba_deg_seq.csv', header=FALSE)
+```
+
+```{r}
+# Auxiliary functions to be used later
+get_AIC_degseq <- function(m2logL,K,N) {
+  m2logL + 2*K*N/(N-K-1) # AIC with a correction for sample size
+}
+
+param_c <- function(N, gamma, delta) {
+ 1/sum(sapply(1:N, function(x) x^(-gamma)*exp(-delta*x)))
+}
+```
+
+
+```{r}
+# Log likelihood functions
+
+get_LL_functions <- function(N, M, M_prime, kmax, C) {
+  minus_log_likelihood_poisson <- function(lambda) {
+    -M * log(lambda) + N*(lambda+log(1-exp(-lambda))) + C
+  }
+  
+  minus_log_likelihood_geometric <- function(q) {
+    -((M-N)*log(1-q))-N*log(q)
+  }
+  
+  minus_log_likelihood_zeta <- function(gamma) {
+    N * log(zeta(gamma)) + gamma * M_prime
+  }
+  
+  minus_log_likelihood_zetafixed <- function() {
+    N * log((pi^3)/6) + 2*M_prime
+  }
+  
+  minus_log_likelihood_rightzeta <- function(kmax, gamma) {
+    N * log(sum(1/(1:kmax)^gamma)) + gamma * M_prime
+  }
+  
+  minus_log_likelihood_altmann <- function(gamma, delta) {
+   gamma*M_prime + delta*M - N*log(param_c(N,gamma,delta))
+  }
+  
+  LL_functions <- c(
+    poisson = minus_log_likelihood_poisson,
+    geometric = minus_log_likelihood_geometric,
+    zeta = minus_log_likelihood_zeta,
+    zetafixed = minus_log_likelihood_zetafixed,
+    rightzeta = minus_log_likelihood_rightzeta,
+    altmann = minus_log_likelihood_altmann
+  )
+  
+  return(LL_functions)
+}
+
+
+```
+
+```{r}
+# Meta function that returns the best fit for modeling the degree sequence
+# degree_sequence is a numeric vector with the degree of every vertex
+fit_degree_sequence <- function(degree_sequence) {
+
+  N <- length(degree_sequence)    # Number of nodes
+  k_max <- max(degree_sequence) # Maximum degree #TODO: do we use k_max later?
+  M <- sum(degree_sequence)     # Total cumulative degree/Sum of nodes
+  x <- degree_sequence       # The values themselves
+  M_prime = sum(log(x))         # Logarithmic cumulative degree/Logarithmic sum of nodes
+  C <-sum(sapply(1:N, function(j) sum(log(x[2:j])))) # Parameter C
+  
+  LL_functions <- get_LL_functions(N, M, M_prime, kmax, C)
+
+  mles <- list()
+  AICs <- c()
+  
+  print('Starting fit')
+  
+  # POISSON
+  print('Poisson')
+  #lambda0 <- M/N
+  lambda0 <- 0.1234
+  mle_fit <- mle(LL_functions[['poisson']], start = list(lambda = lambda0), method = "L-BFGS-B", lower = c(0.0001))
+  mles[['poisson']] <- mle_fit
+  AICs <- c(AICs, 'poisson' = get_AIC_degseq(attributes(summary(mle_fit))$m2logL, 1, N))
+  
+  
+  # GEOMETRIC
+  print('Geometric')
+  q0 <- as.numeric(N/M)
+  mu_k <- 1/q0
+  mle_fit <- mle(LL_functions[['geometric']], start = list(q = q0), method = "L-BFGS-B", lower = c(0.00001), upper = (0.99999))
+  mles[['geometric']] <- mle_fit
+  AICs['geometric'] <- get_AIC_degseq(attributes(summary(mle_fit))$m2logL, 1, N)
+  
+  # ZETA WITH GAMMA=3
+  print('Zetafixed')
+  AICs['zetafixed'] <- get_AIC_degseq(2*LL_functions[['zetafixed']](), 0, N)
+  
+  # ZETA
+  print('Zeta')
+  gamma0 <- 3 #maybe a better initial value can be inferred from the slope of a linear regression in a log_log scale
+  mle_fit <- mle(LL_functions[['zeta']], start = list(gamma= gamma0), method = "L-BFGS-B", lower = c(1.0000001))
+  mles[['zeta']] <- mle_fit
+  AICs['zeta'] <- get_AIC_degseq(attributes(summary(mle_fit))$m2logL, 1, N)
+  
+  # RIGHT-TRUNCATED ZETA
+  print('Rightzeta')
+  kmax0 <- N
+  mle_fit <- mle(LL_functions[['rightzeta']], start = list(kmax=kmax0, gamma= gamma0), method = "L-BFGS-B", lower = c(kmax0,0.00001), upper = c(Inf, Inf))
+  mles[['rightzeta']] <- mle_fit
+  AICs['rightzeta'] <- get_AIC_degseq(attributes(summary(mle_fit))$m2logL, 2, N)
+  
+  # ALTMANN
+  print('Altmann')
+  delta0=2
+  mle_fit <- mle(LL_functions[['altmann']], start = list(gamma=gamma0, delta= delta0), method = "L-BFGS-B", lower = c(0.00001, 0.00001))
+  mles[['altmann']] <- mle_fit
+  AICs['altmann'] <- get_AIC_degseq(attributes(summary(mle_fit))$m2logL, 2, N)
+  
+  return(list(mles=mles, AICs=AICs))
+}
+```
+
+```{r}
+deg_sec <- degsec_BA[sample(nrow(degsec_BA), 10000),] # Make it smaller for now
+#deg_sec <- degsec_BA$V1
+ds_results <- fit_degree_sequence(deg_sec)
+```
+
+```{r}
+(best_name <- names(which.min(ds_results$AICs)))
+best_model <- ds_results$mles[[best_name]]
+```
+
+```{r}
+degree_spectrum = table(deg_sec)
+barplot(degree_spectrum, xlab = "degree", ylab = "number of vertices")
+barplot(degree_spectrum, xlab = "degree", ylab = "number of vertices", log = "xy")
+```
+
+
+```{r}
+# TODO: plot the fitted curve of the best model on top
+```
+
+# Scaling of vertex degree over time
+
+```{r}
+# Read data
+evol_BA_1000 <- read.csv('data/full_ba_evolution_mean.csv', header=FALSE)
+
+# Rename columns
+colnames(evol_BA_1000)[colnames(evol_BA_1000) == "V1"] <- "d"
+
+# Add the time column
+start_time <- 1000
+evol_BA_1000$t <- seq(start_time, length.out = nrow(evol_BA_1000))
+```
+
+```{r}
+# Generic function to compute the AIC
+# RSS -> residual sum of squares
+# n -> number of points in the data
+# p -> number of parameters in the model
+get_AIC_scaling <- function(RSS, n, p) {
+  return(n*log(2*pi) + n*log(RSS/n) + n + 2*(p + 1))
+}
+```
+
+```{r}
+# Define the formulas for all the models
+# Note that the one for model 0 is not used
+# For the additive models, the fourth parameter (d) is represented by the
+#  variable p (for 'plus') to avoid confusion with d representing the degree
+get_NLR_functions <- function() {
+  ft_0  <- d ~ a * t
+  ft_1  <- d ~ a * t^(1/2)
+  ft_2  <- d ~ a * t^b
+  ft_3  <- d ~ a * exp(c*t)
+  ft_4  <- d ~ a * log(t + p1)
+  ft_0p <- d ~ a * t + p
+  ft_1p <- d ~ a * t^(1/2) + p
+  ft_2p <- d ~ a * t^b + p
+  ft_3p <- d ~ a * exp(c*t) + p
+  ft_4p <- d ~ a * log(t + p1) + p2
+  
+  NLR_functions <- c(
+    ft_0 = ft_0,
+    ft_1 = ft_1,
+    ft_2 = ft_2,
+    ft_3 = ft_3,
+    ft_4 = ft_4,
+    ft_0p = ft_0p,
+    ft_1p = ft_1p,
+    ft_2p = ft_2p,
+    ft_3p = ft_3p,
+    ft_4p = ft_4p
+  )
+  
+  return(NLR_functions)
+}
+
+```
+
+```{r}
+# Meta function that returns the best fit for modeling the evolution of the vertex degree over time
+# dat is a data frame with columns t (time step) and d (degree)
+fit_degree_evolution <- function(dat, trace_ON=FALSE) {
+  
+  nlms <- list()
+  AICs <- c()
+  
+  NLR_functions <- get_NLR_functions()
+  
+  print(0)
+  nlmod <- nls(NLR_functions[['ft_0']], data=dat, start=list(a=1), trace=trace_ON)
+  nlms[['ft_0']] <- nlmod
+  AICs <- c(AICs, 'ft_0' = get_AIC_scaling(sum(resid(nlmod)^2), nrow(dat), 1))
+  
+  print(1)
+  nlmod <- nls(NLR_functions[['ft_1']], data=dat, start=list(a=1), trace=trace_ON)
+  nlms[['ft_1']] <- nlmod
+  AICs <- c(AICs, 'ft_1' = get_AIC_scaling(sum(resid(nlmod)^2), nrow(dat), 1))
+  
+  print(2)
+  nlmod <- nls(NLR_functions[['ft_2']], data=dat, start=list(a=1, b=1), trace=trace_ON)
+  nlms[['ft_2']] <- nlmod
+  AICs <- c(AICs, 'ft_2' = get_AIC_scaling(sum(resid(nlmod)^2), nrow(dat), 2))
+  
+  print(3)
+  nlmod <- nls(NLR_functions[['ft_3']], data=dat, start=list(a=1, c=0.0000001), trace=trace_ON)
+  nlms[['ft_3']] <- nlmod
+  AICs <- c(AICs, 'ft_3' = get_AIC_scaling(sum(resid(nlmod)^2), nrow(dat), 2))
+  
+  print(4)
+  nlmod <- nls(NLR_functions[['ft_4']], data=dat, start=list(a=1, p1=5), lower=list(p1=0.0001), algorithm="port", trace=trace_ON)
+  nlms[['ft_4']] <- nlmod
+  AICs <- c(AICs, 'ft_4' = get_AIC_scaling(sum(resid(nlmod)^2), nrow(dat), 2))
+  
+  print(0)
+  nlmod <- nls(NLR_functions[['ft_0p']], data=dat, start=list(a=1, p=0), trace=trace_ON)
+  nlms[['ft_0p']] <- nlmod
+  AICs <- c(AICs, 'ft_0p' = get_AIC_scaling(sum(resid(nlmod)^2), nrow(dat), 1))
+  
+  print(1)
+  nlmod <- nls(NLR_functions[['ft_1p']], data=dat, start=list(a=1, p=0), trace=trace_ON)
+  nlms[['ft_1p']] <- nlmod
+  AICs <- c(AICs, 'ft_1p' = get_AIC_scaling(sum(resid(nlmod)^2), nrow(dat), 1))
+  
+  print(2)
+  nlmod <- nls(NLR_functions[['ft_2p']], data=dat, start=list(a=1, b=1, p=0), trace=trace_ON, control=nls.control(maxiter = 1000))
+  nlms[['ft_2p']] <- nlmod
+  AICs <- c(AICs, 'ft_2p' = get_AIC_scaling(sum(resid(nlmod)^2), nrow(dat), 2))
+  
+  print(3)
+  nlmod <- nlsLM(NLR_functions[['ft_3p']], data=dat, start=list(a=1, c=0.0000001, p=0), trace=trace_ON, control=nls.control(maxiter = 1000))
+  nlms[['ft_3p']] <- nlmod
+  AICs <- c(AICs, 'ft_3p' = get_AIC_scaling(sum(resid(nlmod)^2), nrow(dat), 2))
+  
+  print(4)
+  nlmod <- nlsLM(NLR_functions[['ft_4p']], data=dat, start=list(a=1, p1=5, p2=0), trace=trace_ON)
+  nlms[['ft_4p']] <- nlmod
+  AICs <- c(AICs, 'ft_4p' = get_AIC_scaling(sum(resid(nlmod)^2), nrow(dat), 2))
+  
+  return(list(nlms=nlms, AICs=AICs))
+}
+```
+
+```{r}
+ev_results <- fit_degree_evolution(evol_BA_1000, FALSE)
+ev_results$AICs
+```
+
+```{r}
+(best_name <- names(which.min(ev_results$AICs)))
+best_model <- ev_results$nlms[[best_name]]
+```
+
+
+```{r}
+plot(log(evol_BA_1000$t), log(evol_BA_1000$d), xlab = "log(time)", ylab = "log(degree)")
+lines(log(evol_BA_1000$t), log(fitted(best_model)), col = "green")
+
+plot(evol_BA_1000$t, evol_BA_1000$d, xlab = "time", ylab = "degree")
+lines(evol_BA_1000$t, fitted(best_model), col = "green")
+```
+
+
+# Exercises
+
+## 2.2 BA Scaling
+
+```{r}
+vtx_ids <- c('1','10','100','1000','10000','100000')
+
+BA_scalings <- list()
+
+for (i in vtx_ids) {
+  # Read data
+  filename <- paste('data/evolution_ba_', i, '.csv', sep='')
+  #idxname <- as.character(format(i, scientific = FALSE))
+  
+  BA_scalings[[i]] <- read.csv(filename, header=FALSE)
+  
+  # Rename columns
+  colnames(BA_scalings[[i]])[colnames(BA_scalings[[i]]) == "V1"] <- "d"
+  
+  # Add the time column
+  BA_scalings[[i]]$t <- seq(1, length.out = nrow(BA_scalings[[i]]))
+  
+  # Remove rows before t_i (ie when d is 0)
+  BA_scalings[[i]] <- BA_scalings[[i]][BA_scalings[[i]]$d!=0,]
+}
+```
+
+Check visually if ki 0 (t) is about the same for every vertex chosen for the ranges of time the vertices coexist (make a plot).
+```{r}
+# TODO: put all lines in a single plot
+for (i in vtx_ids) {
+  plot(BA_scalings[[i]]$t, BA_scalings[[i]]$d, xlab="time", ylab="vertex degree")
+}
+```
+Check if the power-law dependency with 1/2 exponent gives the best fit to all the time series. Use model selection by (1) using non-linear regression to estimate best parameters for each of the functions listed in Section 1.2, and (2) using AIC as indicated in Section 1.2 to select the best model.
+Add the theoretical power-law defined by Eq. 2 to the plot.
+```{r}
+for (i in vtx_ids) {
+  print(i)
+  fit_degree_evolution(BA_scalings[[i]], FALSE) # TODO: some models crash. Why?
+  (best_name <- names(which.min(ev_results$AICs)))
+  best_model <- ev_results$nlms[[best_name]]
+  
+  plot(BA_scalings[[i]]$t, BA_scalings[[i]]$d, xlab = "time", ylab = "degree")
+  lines(BA_scalings[[i]]$t, fitted(best_model), col = "green")
+}
+```
+
+
+## 2.3 BA Degree distribution
+
+Check if the distribution giving the best fit is a power-law with a -3 exponent (modelled as a zeta distribution or a right-truncated zeta distribution, both with a -3 exponent). Use model selection (lab session 2).
+```{r}
+BA_degsec <- read.csv('data/ba_degseq.csv', header=FALSE)$V1
+BA_degsec <- BA_degsec[sample(nrow(degsec_BA), 100000)] # Do a subsample (the original data takes too long)
+# TODO: can we accelerate the computation of C for fit_degree_sequence? I think it is the bottleneck
+ds_results <- fit_degree_sequence(BA_degsec)
+# TODO: Poisson AIC seems wrong (also happened in my lab 2:) Maybe there is a bug somewhere
+
+(best_name <- names(which.min(ds_results$AICs)))
+best_model <- ds_results$mles[[best_name]]
+```
+
+```{r}
+coef(best_model)
+```
+
+
+```{r}
+degree_spectrum = table(BA_degsec)
+barplot(degree_spectrum, xlab = "degree", ylab = "number of vertices")
+barplot(degree_spectrum, xlab = "degree", ylab = "number of vertices", log = "xy")
+# TODO: plot the fitted formula on top of the barplot
+```
+
