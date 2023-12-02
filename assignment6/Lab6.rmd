@@ -7,6 +7,7 @@
 require(minpack.lm)
 library("stats4") # for MLE
 library("VGAM") # for the Riemann-zeta function
+library("dplyr")
 ```
 
 # Degree sequence
@@ -21,12 +22,34 @@ degsec_BA <- read.csv('data/full_ba_deg_seq.csv', header=FALSE)
 get_AIC_degseq <- function(m2logL,K,N) {
   m2logL + 2*K*N/(N-K-1) # AIC with a correction for sample size
 }
-
-param_c <- function(N, gamma, delta) {
- 1/sum(sapply(1:N, function(x) x^(-gamma)*exp(-delta*x)))
-}
 ```
 
+```{r}
+poisson <- function( k , lambda ){
+  lambda**k * exp(-lambda) / factorial(k) / ( 1 - exp(-lambda))
+}
+
+geometric <- function( k , q ){
+  (1-q)**k*q
+}
+
+zeta_3 <- function( k ){
+  k**(-3)/zeta(3)
+}
+
+zeta_g <- function( k , gamma ){
+  k**(-gamma)/zeta(gamma)
+}
+
+right_truncated_zeta <- function( k , gamma , km ){
+  k**(-gamma)/sum( (1:floor(km)) ** (-gamma) )
+}
+
+altmann <- function( k , n , gamma , delta ){
+  c = 1 / sum( (1:n) **(-gamma)*exp(-(1:n)*delta ) )
+  c*k**(-gamma)*exp(-delta*k)
+}
+```
 
 ```{r}
 # Log likelihood functions
@@ -37,7 +60,7 @@ get_LL_functions <- function(N, M, M_prime, kmax, C) {
   }
   
   minus_log_likelihood_geometric <- function(q) {
-    -((M-N)*log(1-q))-N*log(q)
+    ((N-M)*log(1-q))-N*log(q)
   }
   
   minus_log_likelihood_zeta <- function(gamma) {
@@ -49,11 +72,12 @@ get_LL_functions <- function(N, M, M_prime, kmax, C) {
   }
   
   minus_log_likelihood_rightzeta <- function(kmax, gamma) {
-    N * log(sum(1/(1:kmax)^gamma)) + gamma * M_prime
+    N * log(sum(1/(1:kmax)^-gamma)) + gamma * M_prime
   }
   
   minus_log_likelihood_altmann <- function(gamma, delta) {
-   gamma*M_prime + delta*M - N*log(param_c(N,gamma,delta))
+    d = sum( (1:N) **(-gamma)*exp(-(1:N)*delta ) )
+    N*log(d) + gamma*M_prime + delta*M
   }
   
   LL_functions <- c(
@@ -67,8 +91,6 @@ get_LL_functions <- function(N, M, M_prime, kmax, C) {
   
   return(LL_functions)
 }
-
-
 ```
 
 ```{r}
@@ -76,12 +98,12 @@ get_LL_functions <- function(N, M, M_prime, kmax, C) {
 # degree_sequence is a numeric vector with the degree of every vertex
 fit_degree_sequence <- function(degree_sequence) {
 
-  N <- length(degree_sequence)    # Number of nodes
-  k_max <- max(degree_sequence) # Maximum degree #TODO: do we use k_max later?
-  M <- sum(degree_sequence)     # Total cumulative degree/Sum of nodes
-  x <- degree_sequence       # The values themselves
-  M_prime = sum(log(x))         # Logarithmic cumulative degree/Logarithmic sum of nodes
-  C <-sum(sapply(1:N, function(j) sum(log(x[2:j])))) # Parameter C
+  N <- sum(degree_sequence$f)      # Number of nodes
+  k_max <- max(degree_sequence$k)  # Maximum degree #TODO: do we use k_max later?
+  M <- sum(degree_sequence$f * degree_sequence$k)            # Total cumulative degree/Sum of nodes
+  x <- degree_sequence             # The values themselves
+  M_prime = sum(degree_sequence$f * log(degree_sequence$k))  # Logarithmic cumulative degree/Logarithmic sum of nodes
+  C <-sum( degree_sequence$f[degree_sequence$k > 1] * sapply(degree_sequence$k[degree_sequence$k > 1], function(ki) sum(log(2:ki)) )) # Parameter C
   
   LL_functions <- get_LL_functions(N, M, M_prime, kmax, C)
 
@@ -93,15 +115,15 @@ fit_degree_sequence <- function(degree_sequence) {
   # POISSON
   print('Poisson')
   #lambda0 <- M/N
-  lambda0 <- 0.1234
-  mle_fit <- mle(LL_functions[['poisson']], start = list(lambda = lambda0), method = "L-BFGS-B", lower = c(0.0001))
+  lambda0 <- 1.000
+  mle_fit <- mle(LL_functions[['poisson']], start = list(lambda = lambda0), method = "L-BFGS-B", lower = c(0.000001))
   mles[['poisson']] <- mle_fit
   AICs <- c(AICs, 'poisson' = get_AIC_degseq(attributes(summary(mle_fit))$m2logL, 1, N))
   
   
   # GEOMETRIC
   print('Geometric')
-  q0 <- as.numeric(N/M)
+  q0 <- 0.5
   mu_k <- 1/q0
   mle_fit <- mle(LL_functions[['geometric']], start = list(q = q0), method = "L-BFGS-B", lower = c(0.00001), upper = (0.99999))
   mles[['geometric']] <- mle_fit
@@ -120,15 +142,36 @@ fit_degree_sequence <- function(degree_sequence) {
   
   # RIGHT-TRUNCATED ZETA
   print('Rightzeta')
-  kmax0 <- N
-  mle_fit <- mle(LL_functions[['rightzeta']], start = list(kmax=kmax0, gamma= gamma0), method = "L-BFGS-B", lower = c(kmax0,0.00001), upper = c(Inf, Inf))
-  mles[['rightzeta']] <- mle_fit
+  #kmax0 <- N
+  #mle_fit <- mle(LL_functions[['rightzeta']], start = list(kmax=kmax0, gamma= gamma0), method = "L-BFGS-B", lower = c(kmax0,0.00001), upper = c(Inf, Inf))
+  #mles[['rightzeta']] <- mle_fit
+  #AICs['rightzeta'] <- get_AIC_degseq(attributes(summary(mle_fit))$m2logL, 2, N)
+  
+  m2logL_prev <-  1e10
+  m2logL <-  1e10-1
+  km  <- k_max
+  while(abs(m2logL-m2logL_prev)>1e-6 && m2logL < m2logL_prev){
+    likelihood <- function(gamma) {
+      LL_functions[['rightzeta']](km, gamma)
+    }
+    mle_fit_prev <- mle_fit
+    mle_fit <- mle( likelihood ,
+                    start = list( gamma = 2 ) , method = "L-BFGS-B" , 
+                    lower = c( 0.00000001 ) , upper = c( 100 ) )
+  
+    m2logL_prev <- m2logL
+    m2logL <- attributes(summary(mle_fit))$m2logL
+    km <- km+round(0.05*k_max)
+  }
+  #attributes(summary(mle_fit_prev))$coef[2] <- km-round(0.05*k_max)
+  mles[['rightzeta']] <- mle_fit_prev
   AICs['rightzeta'] <- get_AIC_degseq(attributes(summary(mle_fit))$m2logL, 2, N)
+  
   
   # ALTMANN
   print('Altmann')
   delta0=2
-  mle_fit <- mle(LL_functions[['altmann']], start = list(gamma=gamma0, delta= delta0), method = "L-BFGS-B", lower = c(0.00001, 0.00001))
+  mle_fit <- mle(LL_functions[['altmann']], start = list(gamma=gamma0, delta= delta0), method = "L-BFGS-B", lower = c(0.00001, 0.00001), upper=c(100,100))
   mles[['altmann']] <- mle_fit
   AICs['altmann'] <- get_AIC_degseq(attributes(summary(mle_fit))$m2logL, 2, N)
   
@@ -137,25 +180,94 @@ fit_degree_sequence <- function(degree_sequence) {
 ```
 
 ```{r}
-deg_sec <- degsec_BA[sample(nrow(degsec_BA), 10000),] # Make it smaller for now
+degree_spectrum <- table(degsec_BA)
+ds = data.frame( degree_spectrum )
+for( j in 1:length(degree_spectrum) ){
+  #Yes, this is weird, but how R manages factors is weirder
+  ds$V2[j] = as.numeric(as.character(ds$V1[j])) 
+}
+ds = ds[c("V2","Freq")]
+ds$p = ds$Freq/sum( degree_spectrum )
+colnames(ds) = c("k","f","p")
+
+#deg_sec <- degsec_BA[sample(nrow(degsec_BA), 10000),] # Make it smaller for now
 #deg_sec <- degsec_BA$V1
-ds_results <- fit_degree_sequence(deg_sec)
+ds_results <- fit_degree_sequence(ds)
 ```
 
 ```{r}
 (best_name <- names(which.min(ds_results$AICs)))
 best_model <- ds_results$mles[[best_name]]
+
+best_func <- switch(
+  best_name,
+  "poisson" = function(k) attributes(summary(best_model))$coef[1]**k * exp(-attributes(summary(best_model))$coef[1]) / factorial(k) / ( 1 - exp(-attributes(summary(best_model))$coef[1])),
+  "geometric" = function(k) (1-attributes(summary(best_model))$coef[1])**k*attributes(summary(best_model))$coef[1],
+  "zetafixed" = function(k) k**(-3)/zeta(3),
+  "zeta" = function(k) k**(-attributes(summary(best_model))$coef[1])/zeta(attributes(summary(best_model))$coef[1]),
+  "rightzeta" = function(k) k**(-attributes(summary(best_model))$coef[1])/ sum( (1:km)^(-attributes(summary(best_model))$coef[1])),
+  "altmann" = function(k) k**(-attributes(summary(best_model))$coef[1])*exp(-attributes(summary(best_model))$coef[2]*k) / sum( (1:sum(ds$f)) **(-attributes(summary(best_model))$coef[1])*exp(-(1:sum(ds$f))*attributes(summary(best_model))$coef[2] ) ),
+)
 ```
 
 ```{r}
-degree_spectrum = table(deg_sec)
-barplot(degree_spectrum, xlab = "degree", ylab = "number of vertices")
-barplot(degree_spectrum, xlab = "degree", ylab = "number of vertices", log = "xy")
+matplot(ds$k,ds$p, main=sprintf("Best model with Barbási-Albert: %s", best_name),
+          xlab = "degree", ylab = "number of vertices" , log = "xy" , pch = 19)
+lines(1:k_max, best_func(1:k_max))
 ```
 
+```{r}
+deg_spec <- read.csv('data/full_ba_deg_seq.txt.mean', sep=" ", header=FALSE)
+colnames(deg_spec) = c("k","f")
+for( j in 1:length(deg_spec) ){
+  #Yes, this is weird, but how R manages factors is weirder
+  deg_spec$k[j] = as.numeric(as.character(deg_spec$k[j])) 
+}
+deg_spec$p = deg_spec$f/sum(deg_spec$f)
+
+```
 
 ```{r}
-# TODO: plot the fitted curve of the best model on top
+matplot(ds$k,ds$p, main = "All models with Barabási-Albert",
+        xlab = "degree", ylab = "number of vertices" , log = "xy" , pch = 19 , cex.lab=1.6,  cex.main=1.8, cex.names=1.4 )
+#matplot(deg_spec$k,deg_spec$p, main = "All models with Barabási-Albert",
+#        xlab = "degree", ylab = "number of vertices" , log = "xy" , pch = 19 , cex.lab=1.6,  cex.main=1.8, cex.names=1.4 )
+
+lines( 1:k_max , 
+       poisson(1:k_max , attributes(summary(ds_results$mles[["poisson"]]))$coef[1]),
+       col = 2)
+lines( 1:k_max , 
+       geometric(1:k_max , attributes(summary(ds_results$mles[["geometric"]]))$coef[1]) ,
+       col = 3)
+lines( 1:k_max ,
+       zeta_3(1:k_max) ,
+       col = 4 )
+lines( 1:k_max ,
+       zeta_g(1:k_max , attributes(summary(ds_results$mles[["zeta"]]))$coef[1]) ,
+       col = 5)
+lines( 1:k_max , 
+       right_truncated_zeta( 
+          1:k_max , 
+          attributes(summary(ds_results$mles[["rightzeta"]]))$coef[1], 
+          km) ,
+       col = 6)
+lines( 1:k_max , 
+       altmann(
+         1:k_max , 
+         sum(ds$f) , 
+         attributes(summary(ds_results$mles[["altmann"]]))$coef[1], 
+         attributes(summary(ds_results$mles[["altmann"]]))$coef[2]) ,
+       col = 7)
+legend( 10**(0.45*(log10(max(ds$k))+log10(min(ds$k)))) , max(ds$p) , 
+        legend = c(TeX(sprintf(r'(D. Poisson($\lambda = %0.3f$))', attributes(summary(ds_results$mles[["poisson"]]))$coef[1])), 
+                   TeX(sprintf(r'(D. Geom($\q = %0.3f$))', attributes(summary(ds_results$mles[["geometric"]]))$coef[1])), 
+                   "Zeta(3)", 
+                   TeX(sprintf(r'(Zeta($\gamma = %0.3f$))', attributes(summary(ds_results$mles[["zeta"]]))$coef[1])),
+                   TeX(sprintf(r'(Trunc Zeta($\gamma = %0.3f, k_{max} = %f$))', attributes(summary(ds_results$mles[["rightzeta"]]))$coef[1], km)),
+                   TeX(sprintf(r'(Altmann($\gamma = %0.3f, \delta = %0.3f$))', attributes(summary(ds_results$mles[["altmann"]]))$coef[1], attributes(summary(ds_results$mles[["altmann"]]))$coef[2]))
+        ), 
+        col =2:7 , cex = 1 , title = "Fit lines" , lty = rep(1,4) 
+      )  
 ```
 
 # Scaling of vertex degree over time
@@ -291,7 +403,6 @@ ev_results$AICs
 best_model <- ev_results$nlms[[best_name]]
 ```
 
-
 ```{r}
 plot(log(evol_BA_1000$t), log(evol_BA_1000$d), xlab = "log(time)", ylab = "log(degree)")
 lines(log(evol_BA_1000$t), log(fitted(best_model)), col = "green")
@@ -299,7 +410,6 @@ lines(log(evol_BA_1000$t), log(fitted(best_model)), col = "green")
 plot(evol_BA_1000$t, evol_BA_1000$d, xlab = "time", ylab = "degree")
 lines(evol_BA_1000$t, fitted(best_model), col = "green")
 ```
-
 
 # Exercises
 
@@ -329,14 +439,16 @@ for (i in vtx_ids) {
 ```
 
 Check visually if ki 0 (t) is about the same for every vertex chosen for the ranges of time the vertices coexist (make a plot).
+
 ```{r}
 # TODO: put all lines in a single plot
 for (i in vtx_ids) {
   plot(BA_scalings[[i]]$t, BA_scalings[[i]]$d, xlab="time", ylab="vertex degree")
 }
 ```
-Check if the power-law dependency with 1/2 exponent gives the best fit to all the time series. Use model selection by (1) using non-linear regression to estimate best parameters for each of the functions listed in Section 1.2, and (2) using AIC as indicated in Section 1.2 to select the best model.
-Add the theoretical power-law defined by Eq. 2 to the plot.
+
+Check if the power-law dependency with 1/2 exponent gives the best fit to all the time series. Use model selection by (1) using non-linear regression to estimate best parameters for each of the functions listed in Section 1.2, and (2) using AIC as indicated in Section 1.2 to select the best model. Add the theoretical power-law defined by Eq. 2 to the plot.
+
 ```{r}
 for (i in vtx_ids) {
   print(i)
@@ -349,10 +461,10 @@ for (i in vtx_ids) {
 }
 ```
 
-
 ## 2.3 BA Degree distribution
 
 Check if the distribution giving the best fit is a power-law with a -3 exponent (modelled as a zeta distribution or a right-truncated zeta distribution, both with a -3 exponent). Use model selection (lab session 2).
+
 ```{r}
 BA_degsec <- read.csv('data/ba_degseq.csv', header=FALSE)$V1
 BA_degsec <- BA_degsec[sample(nrow(degsec_BA), 100000)] # Do a subsample (the original data takes too long)
@@ -368,11 +480,9 @@ best_model <- ds_results$mles[[best_name]]
 coef(best_model)
 ```
 
-
 ```{r}
 degree_spectrum = table(BA_degsec)
 barplot(degree_spectrum, xlab = "degree", ylab = "number of vertices")
 barplot(degree_spectrum, xlab = "degree", ylab = "number of vertices", log = "xy")
 # TODO: plot the fitted formula on top of the barplot
 ```
-
