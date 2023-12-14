@@ -8,14 +8,10 @@ require(minpack.lm)
 library("stats4") # for MLE
 library("VGAM") # for the Riemann-zeta function
 library("dplyr")
+library("latex2exp")
 ```
 
 # Degree sequence
-
-```{r}
-# Read data
-degsec_BA <- read.csv('data/full_ba_deg_seq.csv', header=FALSE)
-```
 
 ```{r}
 # Auxiliary functions to be used later
@@ -98,19 +94,18 @@ get_LL_functions <- function(N, M, M_prime, kmax, C) {
 # degree_sequence is a numeric vector with the degree of every vertex
 fit_degree_sequence <- function(degree_sequence) {
 
-  N <- sum(degree_sequence$f)      # Number of nodes
-  k_max <- max(degree_sequence$k)  # Maximum degree #TODO: do we use k_max later?
-  M <- sum(degree_sequence$f * degree_sequence$k)            # Total cumulative degree/Sum of nodes
-  x <- degree_sequence             # The values themselves
-  M_prime = sum(degree_sequence$f * log(degree_sequence$k))  # Logarithmic cumulative degree/Logarithmic sum of nodes
+  N <- as.integer(sum(degree_sequence$f))      # Number of nodes
+  k_max <- max(degree_sequence$k)  # Maximum degree
+  M <- as.integer(sum(degree_sequence$f * degree_sequence$k))            # Total cumulative degree/Sum of nodes
+  M_prime = as.integer(sum(degree_sequence$f * log(degree_sequence$k)))  # Logarithmic cumulative degree/Logarithmic sum of nodes
   C <-sum( degree_sequence$f[degree_sequence$k > 1] * sapply(degree_sequence$k[degree_sequence$k > 1], function(ki) sum(log(2:ki)) )) # Parameter C
   
-  LL_functions <- get_LL_functions(N, M, M_prime, kmax, C)
+  LL_functions <- get_LL_functions(N, M, M_prime, k_max, C)
 
   mles <- list()
   AICs <- c()
   
-  print('Starting fit')
+  print('Fitting degree sequence')
   
   # POISSON
   print('Poisson')
@@ -123,11 +118,18 @@ fit_degree_sequence <- function(degree_sequence) {
   
   # GEOMETRIC
   print('Geometric')
-  q0 <- 0.5
-  mu_k <- 1/q0
-  mle_fit <- mle(LL_functions[['geometric']], start = list(q = q0), method = "L-BFGS-B", lower = c(0.00001), upper = (0.99999))
-  mles[['geometric']] <- mle_fit
-  AICs['geometric'] <- get_AIC_degseq(attributes(summary(mle_fit))$m2logL, 1, N)
+  tryCatch(
+    {
+      q0 <- as.numeric(N/M)
+      mle_fit <- mle(LL_functions[['geometric']], start = list(q = q0), method = "L-BFGS-B", lower = c(0.00001), upper = (0.99999))
+      mles[['geometric']] <- mle_fit
+      AICs['geometric'] <- get_AIC_degseq(attributes(summary(mle_fit))$m2logL, 1, N)
+    }, error = function(e) {
+      print(paste("Failed to fit model 3:", e$message))
+      mles[['geometric']] <- NA
+      AICs['geometric'] <- Inf
+    }
+  )
   
   # ZETA WITH GAMMA=3
   print('Zetafixed')
@@ -179,110 +181,24 @@ fit_degree_sequence <- function(degree_sequence) {
 }
 ```
 
+
 ```{r}
-degree_spectrum <- table(degsec_BA)
-ds = data.frame( degree_spectrum )
-for( j in 1:length(degree_spectrum) ){
-  #Yes, this is weird, but how R manages factors is weirder
-  ds$V2[j] = as.numeric(as.character(ds$V1[j])) 
+get_best_function <- function(name, model) {
+  best_func <- switch(
+    best_name,
+    "poisson" = function(k) coef(best_model)[1]**k * exp(-coef(best_model)[1]) / factorial(k) / ( 1 - exp(-coef(best_model)[1])),
+    "geometric" = function(k) (1-coef(best_model)[1])**k*coef(best_model)[1],
+    "zetafixed" = function(k) k**(-3)/zeta(3),
+    "zeta" = function(k) k**(-coef(best_model)[1])/zeta(coef(best_model)[1]),
+    "rightzeta" = function(k) k**(-coef(best_model)[1])/ sum( (1:km)^(-coef(best_model)[1])),
+    "altmann" = function(k) k**(-coef(best_model)[1])*exp(-coef(best_model)[2]*k) / sum( (1:sum(ds$f)) **(-coef(best_model)[1])*exp(-(1:sum(ds$f))*coef(best_model)[2] ) ),
+  )
+  return(best_func)
 }
-ds = ds[c("V2","Freq")]
-ds$p = ds$Freq/sum( degree_spectrum )
-colnames(ds) = c("k","f","p")
-
-#deg_sec <- degsec_BA[sample(nrow(degsec_BA), 10000),] # Make it smaller for now
-#deg_sec <- degsec_BA$V1
-ds_results <- fit_degree_sequence(ds)
 ```
 
-```{r}
-(best_name <- names(which.min(ds_results$AICs)))
-best_model <- ds_results$mles[[best_name]]
-
-best_func <- switch(
-  best_name,
-  "poisson" = function(k) attributes(summary(best_model))$coef[1]**k * exp(-attributes(summary(best_model))$coef[1]) / factorial(k) / ( 1 - exp(-attributes(summary(best_model))$coef[1])),
-  "geometric" = function(k) (1-attributes(summary(best_model))$coef[1])**k*attributes(summary(best_model))$coef[1],
-  "zetafixed" = function(k) k**(-3)/zeta(3),
-  "zeta" = function(k) k**(-attributes(summary(best_model))$coef[1])/zeta(attributes(summary(best_model))$coef[1]),
-  "rightzeta" = function(k) k**(-attributes(summary(best_model))$coef[1])/ sum( (1:km)^(-attributes(summary(best_model))$coef[1])),
-  "altmann" = function(k) k**(-attributes(summary(best_model))$coef[1])*exp(-attributes(summary(best_model))$coef[2]*k) / sum( (1:sum(ds$f)) **(-attributes(summary(best_model))$coef[1])*exp(-(1:sum(ds$f))*attributes(summary(best_model))$coef[2] ) ),
-)
-```
-
-```{r}
-matplot(ds$k,ds$p, main=sprintf("Best model with Barbási-Albert: %s", best_name),
-          xlab = "degree", ylab = "number of vertices" , log = "xy" , pch = 19)
-lines(1:k_max, best_func(1:k_max))
-```
-
-```{r}
-deg_spec <- read.csv('data/full_ba_deg_seq.txt.mean', sep=" ", header=FALSE)
-colnames(deg_spec) = c("k","f")
-for( j in 1:length(deg_spec) ){
-  #Yes, this is weird, but how R manages factors is weirder
-  deg_spec$k[j] = as.numeric(as.character(deg_spec$k[j])) 
-}
-deg_spec$p = deg_spec$f/sum(deg_spec$f)
-
-```
-
-```{r}
-matplot(ds$k,ds$p, main = "All models with Barabási-Albert",
-        xlab = "degree", ylab = "number of vertices" , log = "xy" , pch = 19 , cex.lab=1.6,  cex.main=1.8, cex.names=1.4 )
-#matplot(deg_spec$k,deg_spec$p, main = "All models with Barabási-Albert",
-#        xlab = "degree", ylab = "number of vertices" , log = "xy" , pch = 19 , cex.lab=1.6,  cex.main=1.8, cex.names=1.4 )
-
-lines( 1:k_max , 
-       poisson(1:k_max , attributes(summary(ds_results$mles[["poisson"]]))$coef[1]),
-       col = 2)
-lines( 1:k_max , 
-       geometric(1:k_max , attributes(summary(ds_results$mles[["geometric"]]))$coef[1]) ,
-       col = 3)
-lines( 1:k_max ,
-       zeta_3(1:k_max) ,
-       col = 4 )
-lines( 1:k_max ,
-       zeta_g(1:k_max , attributes(summary(ds_results$mles[["zeta"]]))$coef[1]) ,
-       col = 5)
-lines( 1:k_max , 
-       right_truncated_zeta( 
-          1:k_max , 
-          attributes(summary(ds_results$mles[["rightzeta"]]))$coef[1], 
-          km) ,
-       col = 6)
-lines( 1:k_max , 
-       altmann(
-         1:k_max , 
-         sum(ds$f) , 
-         attributes(summary(ds_results$mles[["altmann"]]))$coef[1], 
-         attributes(summary(ds_results$mles[["altmann"]]))$coef[2]) ,
-       col = 7)
-legend( 10**(0.45*(log10(max(ds$k))+log10(min(ds$k)))) , max(ds$p) , 
-        legend = c(TeX(sprintf(r'(D. Poisson($\lambda = %0.3f$))', attributes(summary(ds_results$mles[["poisson"]]))$coef[1])), 
-                   TeX(sprintf(r'(D. Geom($\q = %0.3f$))', attributes(summary(ds_results$mles[["geometric"]]))$coef[1])), 
-                   "Zeta(3)", 
-                   TeX(sprintf(r'(Zeta($\gamma = %0.3f$))', attributes(summary(ds_results$mles[["zeta"]]))$coef[1])),
-                   TeX(sprintf(r'(Trunc Zeta($\gamma = %0.3f, k_{max} = %f$))', attributes(summary(ds_results$mles[["rightzeta"]]))$coef[1], km)),
-                   TeX(sprintf(r'(Altmann($\gamma = %0.3f, \delta = %0.3f$))', attributes(summary(ds_results$mles[["altmann"]]))$coef[1], attributes(summary(ds_results$mles[["altmann"]]))$coef[2]))
-        ), 
-        col =2:7 , cex = 1 , title = "Fit lines" , lty = rep(1,4) 
-      )  
-```
 
 # Scaling of vertex degree over time
-
-```{r}
-# Read data
-evol_BA_1000 <- read.csv('data/full_ba_evolution_mean.csv', header=FALSE)
-
-# Rename columns
-colnames(evol_BA_1000)[colnames(evol_BA_1000) == "V1"] <- "d"
-
-# Add the time column
-start_time <- 1000
-evol_BA_1000$t <- seq(start_time, length.out = nrow(evol_BA_1000))
-```
 
 ```{r}
 # Generic function to compute the AIC
@@ -339,77 +255,123 @@ fit_degree_evolution <- function(dat, trace_ON=FALSE) {
   
   NLR_functions <- get_NLR_functions()
   
-  print(0)
-  nlmod <- nls(NLR_functions[['ft_0']], data=dat, start=list(a=1), trace=trace_ON)
-  nlms[['ft_0']] <- nlmod
-  AICs <- c(AICs, 'ft_0' = get_AIC_scaling(sum(resid(nlmod)^2), nrow(dat), 1))
+  if (trace_ON) print(0)
+  tryCatch(
+    {
+      nlmod <- nlsLM(NLR_functions[['ft_0']], data=dat, start=list(a=1), trace=trace_ON)
+      nlms[['ft_0']] <- nlmod
+      AICs <- c(AICs, 'ft_0' = get_AIC_scaling(sum(resid(nlmod)^2), nrow(dat), 1))
+    }, error = function(e) {
+      print(paste("Failed to fit model 0:", e$message))
+    }
+  )
   
-  print(1)
-  nlmod <- nls(NLR_functions[['ft_1']], data=dat, start=list(a=1), trace=trace_ON)
-  nlms[['ft_1']] <- nlmod
-  AICs <- c(AICs, 'ft_1' = get_AIC_scaling(sum(resid(nlmod)^2), nrow(dat), 1))
   
-  print(2)
-  nlmod <- nls(NLR_functions[['ft_2']], data=dat, start=list(a=1, b=1), trace=trace_ON)
-  nlms[['ft_2']] <- nlmod
-  AICs <- c(AICs, 'ft_2' = get_AIC_scaling(sum(resid(nlmod)^2), nrow(dat), 2))
+  if (trace_ON) print(1)
+  tryCatch(
+    {
+      nlmod <- nlsLM(NLR_functions[['ft_1']], data=dat, start=list(a=1), trace=trace_ON)
+      nlms[['ft_1']] <- nlmod
+      AICs <- c(AICs, 'ft_1' = get_AIC_scaling(sum(resid(nlmod)^2), nrow(dat), 1))
+    }, error = function(e) {
+      print(paste("Failed to fit model 1:", e$message))
+    }
+  )
   
-  print(3)
-  nlmod <- nls(NLR_functions[['ft_3']], data=dat, start=list(a=1, c=0.0000001), trace=trace_ON)
-  nlms[['ft_3']] <- nlmod
-  AICs <- c(AICs, 'ft_3' = get_AIC_scaling(sum(resid(nlmod)^2), nrow(dat), 2))
+  if (trace_ON) print(2)
+  tryCatch(
+    {
+      nlmod <- nlsLM(NLR_functions[['ft_2']], data=dat, start=list(a=1, b=1), trace=trace_ON)
+      nlms[['ft_2']] <- nlmod
+      AICs <- c(AICs, 'ft_2' = get_AIC_scaling(sum(resid(nlmod)^2), nrow(dat), 2))
+    }, error = function(e) {
+      print(paste("Failed to fit model 2:", e$message))
+    }
+  )
   
-  print(4)
-  nlmod <- nls(NLR_functions[['ft_4']], data=dat, start=list(a=1, p1=5), lower=list(p1=0.0001), algorithm="port", trace=trace_ON)
-  nlms[['ft_4']] <- nlmod
-  AICs <- c(AICs, 'ft_4' = get_AIC_scaling(sum(resid(nlmod)^2), nrow(dat), 2))
+  if (trace_ON) print(3)
+  tryCatch(
+    {
+      nlmod <- nlsLM(NLR_functions[['ft_3']], data=dat, start=list(a=1, c=0.0000001), trace=trace_ON)
+      nlms[['ft_3']] <- nlmod
+      AICs <- c(AICs, 'ft_3' = get_AIC_scaling(sum(resid(nlmod)^2), nrow(dat), 2))
+    }, error = function(e) {
+      print(paste("Failed to fit model 3:", e$message))
+    }
+  )
   
-  print(0)
-  nlmod <- nls(NLR_functions[['ft_0p']], data=dat, start=list(a=1, p=0), trace=trace_ON)
-  nlms[['ft_0p']] <- nlmod
-  AICs <- c(AICs, 'ft_0p' = get_AIC_scaling(sum(resid(nlmod)^2), nrow(dat), 1))
+  if (trace_ON) print(4)
+  tryCatch(
+    {
+      nlmod <- nlsLM(NLR_functions[['ft_4']], data=dat, start=list(a=1, p1=5), algorithm="port", trace=trace_ON)
+      #nlmod <- nls(NLR_functions[['ft_4']], data=dat, start=list(a=1, p1=5), lower=list(p1=0.0001), algorithm="port", trace=trace_ON)
+      nlms[['ft_4']] <- nlmod
+      AICs <- c(AICs, 'ft_4' = get_AIC_scaling(sum(resid(nlmod)^2), nrow(dat), 2))
+    }, error = function(e) {
+      print(paste("Failed to fit model 4:", e$message))
+    }
+  )
   
-  print(1)
-  nlmod <- nls(NLR_functions[['ft_1p']], data=dat, start=list(a=1, p=0), trace=trace_ON)
-  nlms[['ft_1p']] <- nlmod
-  AICs <- c(AICs, 'ft_1p' = get_AIC_scaling(sum(resid(nlmod)^2), nrow(dat), 1))
+  if (trace_ON) print(0)
+  tryCatch(
+    {
+      nlmod <- nlsLM(NLR_functions[['ft_0p']], data=dat, start=list(a=1, p=0), trace=trace_ON)
+      nlms[['ft_0p']] <- nlmod
+      AICs <- c(AICs, 'ft_0p' = get_AIC_scaling(sum(resid(nlmod)^2), nrow(dat), 2))
+    }, error = function(e) {
+      print(paste("Failed to fit model 0+:", e$message))
+    }
+  )
   
-  print(2)
-  nlmod <- nls(NLR_functions[['ft_2p']], data=dat, start=list(a=1, b=1, p=0), trace=trace_ON, control=nls.control(maxiter = 1000))
-  nlms[['ft_2p']] <- nlmod
-  AICs <- c(AICs, 'ft_2p' = get_AIC_scaling(sum(resid(nlmod)^2), nrow(dat), 2))
+  if (trace_ON) print(1)
+  tryCatch(
+    {
+      nlmod <- nlsLM(NLR_functions[['ft_1p']], data=dat, start=list(a=1, p=0), trace=trace_ON)
+      nlms[['ft_1p']] <- nlmod
+      AICs <- c(AICs, 'ft_1p' = get_AIC_scaling(sum(resid(nlmod)^2), nrow(dat), 2))
+    }, error = function(e) {
+      print(paste("Failed to fit model 1+:", e$message))
+    }
+  )
   
-  print(3)
-  nlmod <- nlsLM(NLR_functions[['ft_3p']], data=dat, start=list(a=1, c=0.0000001, p=0), trace=trace_ON, control=nls.control(maxiter = 1000))
-  nlms[['ft_3p']] <- nlmod
-  AICs <- c(AICs, 'ft_3p' = get_AIC_scaling(sum(resid(nlmod)^2), nrow(dat), 2))
+  if (trace_ON) print(2)
+  tryCatch(
+    {
+      nlmod <- nlsLM(NLR_functions[['ft_2p']], data=dat, start=list(a=1, b=1, p=0), trace=trace_ON, control=nls.control(maxiter = 1000))
+      nlms[['ft_2p']] <- nlmod
+      AICs <- c(AICs, 'ft_2p' = get_AIC_scaling(sum(resid(nlmod)^2), nrow(dat), 3))
+    }, error = function(e) {
+      print(paste("Failed to fit model 2+:", e$message))
+    }
+  )
   
-  print(4)
-  nlmod <- nlsLM(NLR_functions[['ft_4p']], data=dat, start=list(a=1, p1=5, p2=0), trace=trace_ON)
-  nlms[['ft_4p']] <- nlmod
-  AICs <- c(AICs, 'ft_4p' = get_AIC_scaling(sum(resid(nlmod)^2), nrow(dat), 2))
+  if (trace_ON) print(3)
+  tryCatch(
+    {
+      nlmod <- nlsLM(NLR_functions[['ft_3p']], data=dat, start=list(a=1, c=0.0000001, p=0), trace=trace_ON, control=nls.control(maxiter = 1000))
+      nlms[['ft_3p']] <- nlmod
+      AICs <- c(AICs, 'ft_3p' = get_AIC_scaling(sum(resid(nlmod)^2), nrow(dat), 3))
+    }, error = function(e) {
+      print(paste("Failed to fit model 3+:", e$message))
+    }
+  )
+  
+  if (trace_ON) print(4)
+  tryCatch(
+    {
+      nlmod <- nlsLM(NLR_functions[['ft_4p']], data=dat, start=list(a=1, p1=5, p2=0), trace=trace_ON)
+      nlms[['ft_4p']] <- nlmod
+      AICs <- c(AICs, 'ft_4p' = get_AIC_scaling(sum(resid(nlmod)^2), nrow(dat), 3))
+    }, error = function(e) {
+      print(paste("Failed to fit model 4+:", e$message))
+    }
+  )
   
   return(list(nlms=nlms, AICs=AICs))
 }
 ```
 
-```{r}
-ev_results <- fit_degree_evolution(evol_BA_1000, FALSE)
-ev_results$AICs
-```
 
-```{r}
-(best_name <- names(which.min(ev_results$AICs)))
-best_model <- ev_results$nlms[[best_name]]
-```
-
-```{r}
-plot(log(evol_BA_1000$t), log(evol_BA_1000$d), xlab = "log(time)", ylab = "log(degree)")
-lines(log(evol_BA_1000$t), log(fitted(best_model)), col = "green")
-
-plot(evol_BA_1000$t, evol_BA_1000$d, xlab = "time", ylab = "degree")
-lines(evol_BA_1000$t, fitted(best_model), col = "green")
-```
 
 # Exercises
 
@@ -418,71 +380,318 @@ lines(evol_BA_1000$t, fitted(best_model), col = "green")
 ```{r}
 vtx_ids <- c('1','10','100','1000','10000','100000')
 
-BA_scalings <- list()
+scalings <- list()
 
 for (i in vtx_ids) {
   # Read data
-  filename <- paste('data/evolution_ba_', i, '.csv', sep='')
+  filename <- paste('data/full_ba_evolution_', i, '.csv', sep='')
   #idxname <- as.character(format(i, scientific = FALSE))
   
-  BA_scalings[[i]] <- read.csv(filename, header=FALSE)
+  scalings[[i]] <- read.csv(filename, header=FALSE)
   
   # Rename columns
-  colnames(BA_scalings[[i]])[colnames(BA_scalings[[i]]) == "V1"] <- "d"
+  colnames(scalings[[i]])[colnames(scalings[[i]]) == "V1"] <- "d"
   
   # Add the time column
-  BA_scalings[[i]]$t <- seq(1, length.out = nrow(BA_scalings[[i]]))
+  scalings[[i]]$t <- seq(1, length.out = nrow(scalings[[i]]))
   
   # Remove rows before t_i (ie when d is 0)
-  BA_scalings[[i]] <- BA_scalings[[i]][BA_scalings[[i]]$d!=0,]
+  scalings[[i]] <- scalings[[i]][scalings[[i]]$d!=0,]
 }
 ```
 
 Check visually if ki 0 (t) is about the same for every vertex chosen for the ranges of time the vertices coexist (make a plot).
 
 ```{r}
-# TODO: put all lines in a single plot
 for (i in vtx_ids) {
-  plot(BA_scalings[[i]]$t, BA_scalings[[i]]$d, xlab="time", ylab="vertex degree")
+  plot(scalings[[i]]$t, scalings[[i]]$d, type='l', xlab="time", ylab="vertex degree")
 }
 ```
+
+```{r}
+# Assuming vtx_ids is a vector of indices
+plot(scalings[[vtx_ids[1]]]$t, scalings[[vtx_ids[1]]]$d, type='l', xlab="time", ylab="vertex degree", col=1)
+
+# Loop through the remaining indices and add them to the plot
+for (i in vtx_ids[-1]) {
+  #par(new=TRUE)
+  #lines(scalings[[i]]$t, scalings[[i]]$d, col=i, xlab="", ylab="")
+  #plot(scalings[[vtx_ids[i]]]$t, scalings[[vtx_ids[i]]]$d, type='l', axes=FALSE, xlab="time", ylab="vertex degree", col=1)
+  #axis(side=4, at=pretty(range(scalings[[vtx_ids[6]]]$d)))
+}
+
+# Optionally, add a legend if needed
+legend("topright", legend=vtx_ids, col=1:length(vtx_ids), lty=1, cex=0.8)
+
+
+```
+
 
 Check if the power-law dependency with 1/2 exponent gives the best fit to all the time series. Use model selection by (1) using non-linear regression to estimate best parameters for each of the functions listed in Section 1.2, and (2) using AIC as indicated in Section 1.2 to select the best model. Add the theoretical power-law defined by Eq. 2 to the plot.
 
 ```{r}
 for (i in vtx_ids) {
-  print(i)
-  fit_degree_evolution(BA_scalings[[i]], FALSE) # TODO: some models crash. Why?
+  ev_results <- fit_degree_evolution(scalings[[i]], FALSE)
   (best_name <- names(which.min(ev_results$AICs)))
   best_model <- ev_results$nlms[[best_name]]
   
-  plot(BA_scalings[[i]]$t, BA_scalings[[i]]$d, xlab = "time", ylab = "degree")
-  lines(BA_scalings[[i]]$t, fitted(best_model), col = "green")
+  plot(scalings[[i]]$t, scalings[[i]]$d, type='l', xlab = "time", ylab = "degree", main=best_name)
+  lines(scalings[[i]]$t, fitted(best_model), col = "green")
 }
 ```
+
 
 ## 2.3 BA Degree distribution
 
 Check if the distribution giving the best fit is a power-law with a -3 exponent (modelled as a zeta distribution or a right-truncated zeta distribution, both with a -3 exponent). Use model selection (lab session 2).
 
 ```{r}
-BA_degsec <- read.csv('data/ba_degseq.csv', header=FALSE)$V1
-BA_degsec <- BA_degsec[sample(nrow(degsec_BA), 100000)] # Do a subsample (the original data takes too long)
-# TODO: can we accelerate the computation of C for fit_degree_sequence? I think it is the bottleneck
-ds_results <- fit_degree_sequence(BA_degsec)
-# TODO: Poisson AIC seems wrong (also happened in my lab 2:) Maybe there is a bug somewhere
+ds <- read.csv('data/full_ba_deg_seq.txt.mean', sep=" ", header=FALSE)
+colnames(ds) = c("k","f")
+for( j in 1:length(ds) ){
+  #Yes, this is weird, but how R manages factors is weirder
+  ds$k[j] = as.numeric(as.character(ds$k[j])) 
+}
+ds$p = ds$f/sum(ds$f)
 
+#ds$f <- 0.05*ds$f
+#ds$p <- 0.05*ds$p
+
+ds <- ds[-1,]
+```
+
+```{r}
+ds_results <- fit_degree_sequence(ds)
+```
+
+```{r}
 (best_name <- names(which.min(ds_results$AICs)))
 best_model <- ds_results$mles[[best_name]]
+best_func <- get_best_function(best_name, best_model)
 ```
 
 ```{r}
-coef(best_model)
+matplot(ds$k,ds$p, main = "All models with Barabási-Albert",
+        xlab = "number of vertices", ylab = "degree (probability)" , log = "xy" , pch = 19)
+#matplot(deg_spec$k,deg_spec$p, main = "All models with Barabási-Albert",
+#        xlab = "degree", ylab = "number of vertices" , log = "xy" , pch = 19 , cex.lab=1.6,  cex.main=1.8, cex.names=1.4 )
+
+lines(ds$k, poisson(ds$k, coef(ds_results$mles[["poisson"]])[1]), col = 2)
+lines(ds$k, geometric(ds$k, coef(ds_results$mles[["geometric"]])[1]), col = 3)
+lines(ds$k, zeta_3(ds$k), col = 4 )
+lines(ds$k, zeta_g(ds$k, coef(ds_results$mles[["zeta"]])[1]), col = 5)
+lines(ds$k, right_truncated_zeta(ds$k, coef(ds_results$mles[["rightzeta"]])[1], max(ds$k)), col = 6)
+lines(ds$k, altmann(ds$k, sum(ds$f), coef(ds_results$mles[["altmann"]])[1], coef(ds_results$mles[["altmann"]])[2]), col = 7)
+
+legend(10**(0.60*(log10(max(ds$k))+log10(min(ds$k)))) , max(ds$p) , 
+      legend = c(TeX(sprintf(r'(D. Poisson($\lambda = %0.3f$))', coef(ds_results$mles[["poisson"]])[1])),
+                 TeX(sprintf(r'(D. Geom($\q = %0.3f$))', coef(ds_results$mles[["geometric"]])[1])),
+                   "Zeta(3)",
+                 TeX(sprintf(r'(Zeta($\gamma = %0.3f$))', coef(ds_results$mles[["zeta"]])[1])),
+                 TeX(sprintf(r'(Trunc Zeta($\gamma = %0.3f, k_{max} = %f$))', coef(ds_results$mles[["rightzeta"]])[1], max(ds$k))),
+                 TeX(sprintf(r'(Altmann($\gamma = %0.3f, \delta = %0.3f$))', coef(ds_results$mles[["altmann"]])[1], coef(ds_results$mles[["altmann"]])[2]))
+        ), 
+        col =2:7 , cex = 0.8 , lty = rep(1,4) 
+      )  
+```
+
+
+
+## 3.1 Random Attachment Scaling
+
+
+```{r}
+vtx_ids <- c('1','10','100','1000','10000','100000')
+
+scalings <- list()
+
+for (i in vtx_ids) {
+  # Read data
+  filename <- paste('data/random_attach_evolution_', i, '.csv', sep='')
+  #idxname <- as.character(format(i, scientific = FALSE))
+  
+  scalings[[i]] <- read.csv(filename, header=FALSE)
+  
+  # Rename columns
+  colnames(scalings[[i]])[colnames(scalings[[i]]) == "V1"] <- "d"
+  
+  # Add the time column
+  scalings[[i]]$t <- seq(1, length.out = nrow(scalings[[i]]))
+  
+  # Remove rows before t_i (ie when d is 0)
+  scalings[[i]] <- scalings[[i]][scalings[[i]]$d!=0,]
+}
+```
+
+Check visually if ki 00 (t) is about the same for every vertex chosen for the ranges of time the vertices coexist (make a plot).
+
+```{r}
+for (i in vtx_ids) {
+  plot(scalings[[i]]$t, scalings[[i]]$d, type='l', xlab="time", ylab="vertex degree")
+}
+```
+Check if Eq. 5 holds through the logarithmic function of model 4 (or 4+). Check if that model gives the best fit to all the time series (use model selection). If that is the case check that a ≈ m0 and d1 ≈ m0 − 1.
+
+```{r}
+for (i in vtx_ids) {
+  ev_results <- fit_degree_evolution(scalings[[i]], FALSE)
+  (best_name <- names(which.min(ev_results$AICs)))
+  best_model <- ev_results$nlms[[best_name]]
+  
+  plot(scalings[[i]]$t, scalings[[i]]$d, type='l', xlab = "time", ylab = "degree", main=best_name)
+  lines(scalings[[i]]$t, fitted(best_model), col = "green")
+}
+```
+
+
+
+## 3.2 Random Attachment Degree distribution
+
+Check if the distribution giving the best fit is a power-law with a -3 exponent (modelled as a zeta distribution or a right-truncated zeta distribution, both with a -3 exponent). Use model selection (lab session 2).
+
+```{r}
+ds <- read.csv('data/random_attach_deg_seq.txt.mean', sep=" ", header=FALSE)
+colnames(ds) = c("k","f")
+for( j in 1:length(ds) ){
+  #Yes, this is weird, but how R manages factors is weirder
+  ds$k[j] = as.numeric(as.character(ds$k[j])) 
+}
+ds$p = ds$f/sum(ds$f)
+
+ds <- ds[-1,]
 ```
 
 ```{r}
-degree_spectrum = table(BA_degsec)
-barplot(degree_spectrum, xlab = "degree", ylab = "number of vertices")
-barplot(degree_spectrum, xlab = "degree", ylab = "number of vertices", log = "xy")
-# TODO: plot the fitted formula on top of the barplot
+ds_results <- fit_degree_sequence(ds)
+```
+
+```{r}
+(best_name <- names(which.min(ds_results$AICs)))
+best_model <- ds_results$mles[[best_name]]
+best_func <- get_best_function(best_name, best_model)
+```
+
+```{r}
+matplot(ds$k,ds$p, main = "All models with Growth + Random Attachment",
+        xlab = "number of vertices", ylab = "degree (probability)" , log = "xy" , pch = 19)
+#matplot(deg_spec$k,deg_spec$p, main = "All models with Barabási-Albert",
+#        xlab = "degree", ylab = "number of vertices" , log = "xy" , pch = 19 , cex.lab=1.6,  cex.main=1.8, cex.names=1.4 )
+
+lines(ds$k, poisson(ds$k, coef(ds_results$mles[["poisson"]])[1]), col = 2)
+lines(ds$k, geometric(ds$k, coef(ds_results$mles[["geometric"]])[1]), col = 3)
+lines(ds$k, zeta_3(ds$k), col = 4 )
+lines(ds$k, zeta_g(ds$k, coef(ds_results$mles[["zeta"]])[1]), col = 5)
+lines(ds$k, right_truncated_zeta(ds$k, coef(ds_results$mles[["rightzeta"]])[1], max(ds$k)), col = 6)
+lines(ds$k, altmann(ds$k, sum(ds$f), coef(ds_results$mles[["altmann"]])[1], coef(ds_results$mles[["altmann"]])[2]), col = 7)
+
+legend(4 , 0.0001 , 
+      legend = c(TeX(sprintf(r'(D. Poisson($\lambda = %0.3f$))', coef(ds_results$mles[["poisson"]])[1])), 
+                 TeX(sprintf(r'(D. Geom($\q = %0.3f$))', coef(ds_results$mles[["geometric"]])[1])), 
+                   "Zeta(3)", 
+                 TeX(sprintf(r'(Zeta($\gamma = %0.3f$))', coef(ds_results$mles[["zeta"]])[1])),
+                 TeX(sprintf(r'(Trunc Zeta($\gamma = %0.3f, k_{max} = %f$))', coef(ds_results$mles[["rightzeta"]])[1], max(ds$k))),
+                 TeX(sprintf(r'(Altmann($\gamma = %0.3f, \delta = %0.3f$))', coef(ds_results$mles[["altmann"]])[1], coef(ds_results$mles[["altmann"]])[2]))
+        ), 
+        col =2:7 , cex = 0.8 , title = "Fit lines" , lty = rep(1,4) 
+      )  
+```
+
+
+## 3.1 No growth Scaling
+
+
+```{r}
+vtx_ids <- c('1','10','100')
+
+scalings <- list()
+
+for (i in vtx_ids) {
+  # Read data
+  filename <- paste('data/no_growth_evolution_', i, '.csv', sep='')
+  #idxname <- as.character(format(i, scientific = FALSE))
+  
+  scalings[[i]] <- read.csv(filename, header=FALSE)
+  
+  # Rename columns
+  colnames(scalings[[i]])[colnames(scalings[[i]]) == "V1"] <- "d"
+  
+  # Add the time column
+  scalings[[i]]$t <- seq(1, length.out = nrow(scalings[[i]]))
+  
+  # Remove rows before t_i (ie when d is 0)
+  scalings[[i]] <- scalings[[i]][scalings[[i]]$d!=0,]
+}
+```
+
+Check visually if ki 00 (t) is about the same for every vertex chosen for the ranges of time the vertices coexist (make a plot).
+
+```{r}
+for (i in vtx_ids) {
+  plot(scalings[[i]]$t, scalings[[i]]$d, type='l', xlab="time", ylab="vertex degree")
+}
+```
+Check if Eq. 5 holds through the logarithmic function of model 4 (or 4+). Check if that model gives the best fit to all the time series (use model selection). If that is the case check that a ≈ m0 and d1 ≈ m0 − 1.
+
+```{r}
+for (i in vtx_ids) {
+  ev_results <- fit_degree_evolution(scalings[[i]], FALSE)
+  (best_name <- names(which.min(ev_results$AICs)))
+  best_model <- ev_results$nlms[[best_name]]
+  
+  plot(scalings[[i]]$t, scalings[[i]]$d, type='l', xlab = "time", ylab = "degree", main=best_name)
+  lines(scalings[[i]]$t, fitted(best_model), col = "green")
+}
+```
+
+
+
+## 3.2 No growth Degree distribution
+
+Check if the distribution giving the best fit is a power-law with a -3 exponent (modelled as a zeta distribution or a right-truncated zeta distribution, both with a -3 exponent). Use model selection (lab session 2).
+
+```{r}
+ds <- read.csv('data/no_growth_deg_seq.txt.mean', sep=" ", header=FALSE)
+colnames(ds) = c("k","f")
+for( j in 1:length(ds) ){
+  #Yes, this is weird, but how R manages factors is weirder
+  ds$k[j] = as.numeric(as.character(ds$k[j])) 
+}
+ds$p = ds$f/sum(ds$f)
+
+ds <- ds[-1,]
+```
+
+```{r}
+ds_results <- fit_degree_sequence(ds)
+```
+
+```{r}
+(best_name <- names(which.min(ds_results$AICs)))
+best_model <- ds_results$mles[[best_name]]
+best_func <- get_best_function(best_name, best_model)
+```
+
+```{r}
+matplot(ds$k,ds$p, main = "All models with No Growth + Preferential Attachment",
+        xlab = "number of vertices", ylab = "degree (probability)" , log = "xy" , pch = 19)
+#matplot(deg_spec$k,deg_spec$p, main = "All models with Barabási-Albert",
+#        xlab = "degree", ylab = "number of vertices" , log = "xy" , pch = 19 , cex.lab=1.6,  cex.main=1.8, cex.names=1.4 )
+
+lines(ds$k, poisson(ds$k, coef(ds_results$mles[["poisson"]])[1]), col = 2)
+#lines(ds$k, geometric(ds$k, coef(ds_results$mles[["geometric"]])[1]), col = 3)
+lines(ds$k, zeta_3(ds$k), col = 4 )
+lines(ds$k, zeta_g(ds$k, coef(ds_results$mles[["zeta"]])[1]), col = 5)
+lines(ds$k, right_truncated_zeta(ds$k, coef(ds_results$mles[["rightzeta"]])[1], max(ds$k)), col = 6)
+lines(ds$k, altmann(ds$k, sum(ds$f), coef(ds_results$mles[["altmann"]])[1], coef(ds_results$mles[["altmann"]])[2]), col = 7)
+
+legend(5450, 5e-05, 
+      legend = c(TeX(sprintf(r'(D. Poisson($\lambda = %0.3f$))', coef(ds_results$mles[["poisson"]])[1])), 
+                 #TeX(sprintf(r'(D. Geom($\q = %0.3f$))', coef(ds_results$mles[["geometric"]])[1])), 
+                   "Zeta(3)", 
+                 TeX(sprintf(r'(Zeta($\gamma = %0.3f$))', coef(ds_results$mles[["zeta"]])[1])),
+                 TeX(sprintf(r'(Trunc Zeta($\gamma = %0.3f, k_{max} = %f$))', coef(ds_results$mles[["rightzeta"]])[1], max(ds$k))),
+                 TeX(sprintf(r'(Altmann($\gamma = %0.3f, \delta = %0.3f$))', coef(ds_results$mles[["altmann"]])[1], coef(ds_results$mles[["altmann"]])[2]))
+        ), 
+        col =2:7 , cex = 0.8 , title = "Fit lines" , lty = rep(1,4) 
+      )  
 ```
