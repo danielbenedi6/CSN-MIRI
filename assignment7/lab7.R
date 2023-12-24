@@ -120,7 +120,7 @@ for (gamma in listgamma){
   # This experiment  allows us to see how SIS converges  depending  on  the
   # probabiblity of Erdös-Renyi graphs
   ErdoRenyiConvergence <- plot_erdos_renyi(N,step,num_rep,gamma)
-  filename<-paste0('ErdosRenyiConvergence_', gamma)#, 'png')
+  filename<-paste0('ErdosRenyiConvergence_', gamma, 'png')
   ggsave(filename, path=filepath, device='png', plot = ErdoRenyiConvergence, width = 6, height = 4, units = 'in')
   
   # This experiment  allows us to see how much variance there is in the eigenvaleus
