@@ -335,8 +335,9 @@ filepath<-'/home/didac/Documents/CSN/LAB/CSN-MIRI/assignment7/img'
 N <-1000
 step <- 0.2
 num_rep <- 10
-#gamma <- 0.3
+gamma <- 0.3
 listgamma <- c(0.15, 0.3, 0.45, 0.6, 0.75, 0.9)
+listp0 <- c(0.1, 0.25, 0.5, 0.75, 0.9)
 
 #######################
 ##### EXERCISE 1 ######
@@ -351,53 +352,157 @@ listgamma <- c(0.15, 0.3, 0.45, 0.6, 0.75, 0.9)
 #plot_complete(N,step,num_rep,gamma)    Similar to erdos-renyi
 #plot_lattice(N,step,num_rep,gamma)     Similar to tree
 
-
-for (gamma in listgamma){
-  # This experiment  allows us to see how SIS converges  depending  on  the
-  # probabiblity of each graph
-  ErdoRenyiConvergence <- plot_erdos_renyi(N,step,num_rep,gamma)
-  filename<-paste0('ErdosRenyiConvergence_', gamma, '.png')
-  ggsave(filename, path=filepath, device='png', plot = ErdoRenyiConvergence, width = 6, height = 4, units = 'in')
-  BarabasiAlbertConvergence <- plot_barabasi_albert(N,step,num_rep,gamma)
-  filename<-paste0('BarabasiAlbertConvergence_', gamma, '.png')
-  ggsave(filename, path=filepath, device='png', plot = BarabasiAlbertConvergence, width = 6, height = 4, units = 'in')
-  SmallWorldConvergence <- plot_small_world(N,step,num_rep,gamma)
-  filename<-paste0('SmallWorldConvergence_', gamma, '.png')
-  ggsave(filename, path=filepath, device='png', plot = SmallWorldConvergence, width = 6, height = 4, units = 'in')
-  TreeConvergence <- plot_tree(N,step,num_rep,gamma)
-  filename<-paste0('TreeConvergence_', gamma, '.png')
-  ggsave(filename, path=filepath, device='png', plot = TreeConvergence, width = 6, height = 4, units = 'in')
-  StarConvergence <- plot_star(N,step,num_rep,gamma)
-  filename<-paste0('StarConvergence_', gamma, '.png')
-  ggsave(filename, path=filepath, device='png', plot = StarConvergence, width = 6, height = 4, units = 'in')
+for (p0 in listp0) { # We will experiment varying the percentage of initial inffected
+  print(sprintf("Simulating with %.1f%% infected initialy...", p0*100))
+  infected <- floor(p0*N)
+  gamma <- 0.3 # Recovery probability
+  beta <- 0.4  # Spread probability
   
-  # This experiment  allows us to see how much variance there is in the eigenvalues
-  # for each graph.
-  #
-  filename<-paste0(filepath, '/ErdosRenyiEigenvalues_', gamma, '.png')
-  png(filename)
-  ErdoRenyiEigenvalues <- plot_erdos_renyi_eigen(N, step, num_rep)
-  dev.off()
-  filename<-paste0(filepath, '/BarabasiAlbertEigenvalues_', gamma, '.png')
-  png(filename)
-  BarabasiAlbertEigenvalues <- plot_barabasi_albert_eigen(N, step, num_rep)
-  dev.off()
-  filename<-paste0(filepath, '/SmallWorldEigenvalues_', gamma, '.png')
-  png(filename)
-  SmallWorldEigenvalues <- plot_small_world_eigen(N, step, num_rep)
-  dev.off()
-  filename<-paste0(filepath, '/TreeEigenvalues_', gamma, '.png')
-  png(filename)
-  TreeEigenvalues <- plot_tree_eigen(N, step, num_rep)
-  dev.off()
-  filename<-paste0(filepath, '/StarEigenvalues_', gamma, '.png')
-  png(filename)
-  StarEigenvalues <- plot_star_eigen(N, step, num_rep)
-  dev.off()
+  data <- data.frame()
+  eigens <- data.frame()
+  
+  G <- erdos.renyi.game(N, 0.4)
+  max_eigen <- max(eigen(as_adj(G))$values)
+  if(beta > gamma/max_eigen) {
+    print("    Erdös-Renyi is above threshold")
+  } else {
+    print("    Erdös-Renyi is below threshold")
+  }
+  res_er <- repetition(num_rep, G, gamma, beta, infected)
+  eigens <- rbind(eigens, data.frame(graph="Erdös-Renyi", max_eigenvalue=c(max_eigen), threshold=c(gamma/max_eigen)))
+  
+  num_clusters <- 4
+  B <- diag(0.9,num_clusters) + matrix(0.1,num_clusters,num_clusters)
+  G <- barabasi_albert_blocks(m=8, p=rep(1/num_clusters, num_clusters), B=B, t_max=N)
+  max_eigen <- max(eigen(as_adj(G))$values)
+  if(beta > gamma/max_eigen) {
+    print("    Barbási-Albert is above threshold")
+  } else {
+    print("    Barabási-Albert is below threshold")
+  }
+  res_ba <- repetition(num_rep, G, gamma, beta, infected)
+  eigens <- rbind(eigens, data.frame(graph="Barabási-Albert", max_eigenvalue=c(max_eigen), threshold=c(gamma/max_eigen)))
+  
+  G <- sample_smallworld(dim=1, size=N, nei=5, p=0.25)
+  max_eigen <- max(eigen(as_adj(G))$values)
+  if(beta > gamma/max_eigen) {
+    print("    Watts-Strogatz is above threshold")
+  } else {
+    print("    Watts-Strogatz is below threshold")
+  }
+  res_ws <- repetition(num_rep, G, gamma, beta, infected)
+  eigens <- rbind(eigens, data.frame(graph="Watts-Strogatz", max_eigenvalue=c(max_eigen), threshold=c(gamma/max_eigen)))
+  
+  G <- make_tree(N, children = 4, mode = "undirected")
+  max_eigen <- max(eigen(as_adj(G))$values)
+  if(beta > gamma/max_eigen) {
+    print("    Tree is above threshold")
+  } else {
+    print("    Tree is below threshold")
+  }
+  res_tree <- repetition(num_rep, G, gamma, beta, infected)
+  eigens <- rbind(eigens, data.frame(graph="Tree", max_eigenvalue=c(max_eigen), threshold=c(gamma/max_eigen)))
+  
+  G <- make_star(N, mode = "undirected", center = 1)
+  max_eigen <- max(eigen(as_adj(G))$values)
+  if(beta > gamma/max_eigen) {
+    print("    Star is above threshold")
+  } else {
+    print("    Star is below threshold")
+  }
+  res_star <- repetition(num_rep, G, gamma, beta, infected)
+  eigens <- rbind(eigens, data.frame(graph="Star", max_eigenvalue=c(max_eigen), threshold=c(gamma/max_eigen)))
+  
+  print("    Saving results...")
+  
+  print(xtable(eigens, type="latex", auto=TRUE),  include.rownames=FALSE, file=sprintf("./tables/eigens_%.2f.tex",p0))
+  
+  max_len <- max(length(res_er), length(res_ba), length(res_ws), length(res_tree), length(res_star))
+  res_er <- append(res_er, rep(res_er[length(res_er)], max_len-length(res_er)))
+  res_ba <- append(res_ba, rep(res_ba[length(res_ba)], max_len-length(res_ba)))
+  res_ws <- append(res_ws, rep(res_ws[length(res_ws)], max_len-length(res_ws)))
+  res_tree <- append(res_tree, rep(res_tree[length(res_tree)], max_len-length(res_tree)))
+  res_star <- append(res_star, rep(res_star[length(res_star)], max_len-length(res_star)))
+  
+  data <- rbind(data, data.frame(graph="Erdös-Renyi", x = seq(1 / max_len, 1, 1 / max_len), y = res_er))
+  data <- rbind(data, data.frame(graph="Barabási-Albert", x = seq(1 / max_len, 1, 1 / max_len), y = res_ba))
+  data <- rbind(data, data.frame(graph="Watts-Strogatz", x = seq(1 / max_len, 1, 1 / max_len), y = res_ws))
+  data <- rbind(data, data.frame(graph="Tree", x = seq(1 / max_len, 1, 1 / max_len), y = res_tree))
+  data <- rbind(data, data.frame(graph="Star", x = seq(1 / max_len, 1, 1 / max_len), y = res_star))
+  
+  ggplot(data, aes(x = x, y = y, color = factor(graph))) +
+    scale_x_log10(name = 'Normalized Time') +
+    scale_y_continuous(name = 'Proportion of infected nodes', limits=c(0,1)) +
+    #theme_minimal() +
+    labs(title = 'SIS Simulation') +
+    theme(legend.position = 'bottom') + geom_line() +
+    scale_color_discrete(name = 'Network type')
+  ggsave(sprintf("./img/AllNetworks_%.2f.pdf",p0))
 }
+
+# This experiment  allows us to see how much variance there is in the eigenvalues
+# for each graph.
+#
+filename<-paste0(filepath, '/ErdosRenyiEigenvalues_', gamma, '.pdf')
+pdf(filename)
+ErdoRenyiEigenvalues <- plot_erdos_renyi_eigen(N, step, num_rep)
+dev.off()
+filename<-paste0(filepath, '/BarabasiAlbertEigenvalues_', gamma, '.pdf')
+pdf(filename)
+BarabasiAlbertEigenvalues <- plot_barabasi_albert_eigen(N, step, num_rep)
+dev.off()
+filename<-paste0(filepath, '/SmallWorldEigenvalues_', gamma, '.pdf')
+pdf(filename)
+SmallWorldEigenvalues <- plot_small_world_eigen(N, step, num_rep)
+dev.off()
+filename<-paste0(filepath, '/TreeEigenvalues_', gamma, '.pdf')
+pdf(filename)
+TreeEigenvalues <- plot_tree_eigen(N, step, num_rep)
+dev.off()
+filename<-paste0(filepath, '/StarEigenvalues_', gamma, '.pdf')
+pdf(filename)
+StarEigenvalues <- plot_star_eigen(N, step, num_rep)
+dev.off()
 
 #######################
 ##### EXERCISE 2 ######
 #######################
 
-#....
+for (gamma in listgamma){
+  # This experiment  allows us to see how SIS converges  depending  on  the
+  # probabiblity of each graph
+  ErdoRenyiConvergence <- plot_erdos_renyi(N,step,num_rep,gamma,0.05)
+  filename<-paste0('ErdosRenyiConvergence_Above_', gamma, '.pdf')
+  ggsave(filename, path=filepath, device='pdf', plot = ErdoRenyiConvergence, width = 6, height = 4, units = 'in')
+  BarabasiAlbertConvergence <- plot_barabasi_albert(N,step,num_rep,gamma,0.05)
+  filename<-paste0('BarabasiAlbertConvergence_Above_', gamma, '.pdf')
+  ggsave(filename, path=filepath, device='pdf', plot = BarabasiAlbertConvergence, width = 6, height = 4, units = 'in')
+  SmallWorldConvergence <- plot_small_world(N,step,num_rep,gamma,0.05)
+  filename<-paste0('SmallWorldConvergence_Above_', gamma, '.pdf')
+  ggsave(filename, path=filepath, device='pdf', plot = SmallWorldConvergence, width = 6, height = 4, units = 'in')
+  TreeConvergence <- plot_tree(N,step,num_rep,gamma,0.05)
+  filename<-paste0('TreeConvergence_Above_', gamma, '.pdf')
+  ggsave(filename, path=filepath, device='pdf', plot = TreeConvergence, width = 6, height = 4, units = 'in')
+  StarConvergence <- plot_star(N,step,num_rep,gamma,0.05)
+  filename<-paste0('StarConvergence_Above_', gamma, '.pdf')
+  ggsave(filename, path=filepath, device='pdf', plot = StarConvergence, width = 6, height = 4, units = 'in')
+  
+  
+  # This experiment  allows us to see how SIS converges  depending  on  the
+  # probabiblity of each graph
+  ErdoRenyiConvergence <- plot_erdos_renyi(N,step,num_rep,gamma,-0.05)
+  filename<-paste0('ErdosRenyiConvergence_Below_', gamma, '.pdf')
+  ggsave(filename, path=filepath, device='pdf', plot = ErdoRenyiConvergence, width = 6, height = 4, units = 'in')
+  BarabasiAlbertConvergence <- plot_barabasi_albert(N,step,num_rep,gamma,-0.05)
+  filename<-paste0('BarabasiAlbertConvergence_Below_', gamma, '.pdf')
+  ggsave(filename, path=filepath, device='pdf', plot = BarabasiAlbertConvergence, width = 6, height = 4, units = 'in')
+  SmallWorldConvergence <- plot_small_world(N,step,num_rep,gamma,-0.05)
+  filename<-paste0('SmallWorldConvergence_Below_', gamma, '.pdf')
+  ggsave(filename, path=filepath, device='pdf', plot = SmallWorldConvergence, width = 6, height = 4, units = 'in')
+  TreeConvergence <- plot_tree(N,step,num_rep,gamma,-0.05)
+  filename<-paste0('TreeConvergence_Below_', gamma, '.pdf')
+  ggsave(filename, path=filepath, device='pdf', plot = TreeConvergence, width = 6, height = 4, units = 'in')
+  StarConvergence <- plot_star(N,step,num_rep,gamma,-0.05)
+  filename<-paste0('StarConvergence_Below_', gamma, '.pdf')
+  ggsave(filename, path=filepath, device='pdf', plot = StarConvergence, width = 6, height = 4, units = 'in')
+}
