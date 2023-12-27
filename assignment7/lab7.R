@@ -73,13 +73,13 @@ plot_erdos_renyi_eigen <- function(N,step,num_rep)  {
   data
 }
 
-plot_erdos_renyi <- function(N, step, num_rep, gamma) {
+plot_erdos_renyi <- function(N, step, num_rep, gamma, epsilon) {
   data <- data.frame()
   
   for (p in seq(step, 1, step)) {
     G <- erdos.renyi.game(N, p)
     max_eigenvalue <- max(eigen(as_adj(G))$values)
-    beta <- gamma / max_eigenvalue + 0.05
+    beta <- gamma / max_eigenvalue + epsilon
     res <- repetition(num_rep, G, gamma, beta, 100)
     data <- rbind(data, data.frame(prob = p, x = seq(0, 1, 1 / (length(res) - 1)), y = res))
   }
@@ -119,13 +119,13 @@ plot_barabasi_albert_eigen <- function(N,step,num_rep)  {
 
 
 
-plot_barabasi_albert <- function(N, step, num_rep, gamma) {
+plot_barabasi_albert <- function(N, step, num_rep, gamma, epsilon) {
   data <- data.frame()
   
   for (p in seq(step, 1, step)) {
     G <- BarabasiAlbert(N, p)
     max_eigenvalue <- max(eigen(as_adj(G))$values)
-    beta <- gamma / max_eigenvalue + 0.05
+    beta <- gamma / max_eigenvalue + epsilon
     res <- repetition(num_rep, G, gamma, beta, 100)
     data <- rbind(data, data.frame(prob = p, x = seq(0, 1, 1 / (length(res) - 1)), y = res))
   }
@@ -156,13 +156,13 @@ plot_small_world_eigen <- function(N,step,num_rep)  {
   data
 }
 
-plot_small_world <- function(N, step, num_rep, gamma) {
+plot_small_world <- function(N, step, num_rep, gamma, epsilon) {
   data <- data.frame()
   
   for (p in seq(step, 1, step)) {
     G <- sample_smallworld(dim=1, size=N, nei=5, p=p)
     max_eigenvalue <- max(eigen(as_adj(G))$values)
-    beta <- gamma / max_eigenvalue + 0.05
+    beta <- gamma / max_eigenvalue + epsilon
     res <- repetition(num_rep, G, gamma, beta, 100)
     data <- rbind(data, data.frame(prob = p, x = seq(0, 1, 1 / (length(res) - 1)), y = res))
   }
@@ -195,13 +195,13 @@ plot_tree_eigen <- function(N,step,num_rep)  {
 
 
 
-plot_tree <- function(N, step, num_rep, gamma) {
+plot_tree <- function(N, step, num_rep, gamma, epsilon) {
   data <- data.frame()
   
   for (p in seq(step, 1, step)) {
     G <- make_tree(N, children = 2, mode = "undirected")
     max_eigenvalue <- max(eigen(as_adj(G))$values)
-    beta <- gamma / max_eigenvalue + 0.05
+    beta <- gamma / max_eigenvalue + epsilon
     res <- repetition(num_rep, G, gamma, beta, 100)
     data <- rbind(data, data.frame(prob = p, x = seq(0, 1, 1 / (length(res) - 1)), y = res))
   }
@@ -234,13 +234,13 @@ plot_star_eigen <- function(N,step,num_rep)  {
 }
 
 
-plot_star <- function(N, step, num_rep, gamma) {
+plot_star <- function(N, step, num_rep, gamma, epsilon) {
   data <- data.frame()
   
   for (p in seq(step, 1, step)) {
     G <- make_star(N, mode = "undirected", center = 1)
     max_eigenvalue <- max(eigen(as_adj(G))$values)
-    beta <- gamma / max_eigenvalue + 0.05
+    beta <- gamma / max_eigenvalue + epsilon
     res <- repetition(num_rep, G, gamma, beta, 100)
     data <- rbind(data, data.frame(prob = p, x = seq(0, 1, 1 / (length(res) - 1)), y = res))
   }
@@ -272,12 +272,12 @@ plot_complete_eigen <- function(N,step,num_rep)  {
 }
 
 
-plot_complete <- function(N, step, num_rep, gamma) {
+plot_complete <- function(N, step, num_rep, gamma, epsilon) {
   data <- data.frame()
   for (p in seq(step, 1, step)) {
     G <- make_full_graph(N, directed = FALSE, loops = FALSE)
     max_eigenvalue <- max(eigen(as_adj(G))$values)
-    beta <- gamma / max_eigenvalue + 0.05
+    beta <- gamma / max_eigenvalue + epsilon
     res <- repetition(num_rep, G, gamma, beta, 100)
     data <- rbind(data, data.frame(prob = p, x = seq(0, 1, 1 / (length(res) - 1)), y = res))
   }
@@ -310,12 +310,12 @@ plot_lattice_eigen <- function(N,step,num_rep)  {
 }
 
 
-plot_lattice <- function(N, step, num_rep, gamma) {
+plot_lattice <- function(N, step, num_rep, gamma, epsilon) {
   data <- data.frame()
   for (p in seq(step, 1, step)) {
     G <- make_ring(n=N, directed = FALSE,)
     max_eigenvalue <- max(eigen(as_adj(G))$values)
-    beta <- gamma / max_eigenvalue + 0.05
+    beta <- gamma / max_eigenvalue + epsilon
     res <- repetition(num_rep, G, gamma, beta, 100)
     data <- rbind(data, data.frame(prob = p, x = seq(0, 1, 1 / (length(res) - 1)), y = res))
   }
@@ -371,7 +371,7 @@ for (gamma in listgamma){
   filename<-paste0('StarConvergence_', gamma, '.png')
   ggsave(filename, path=filepath, device='png', plot = StarConvergence, width = 6, height = 4, units = 'in')
   
-  # This experiment  allows us to see how much variance there is in the eigenvaleus
+  # This experiment  allows us to see how much variance there is in the eigenvalues
   # for each graph.
   #
   filename<-paste0(filepath, '/ErdosRenyiEigenvalues_', gamma, '.png')
