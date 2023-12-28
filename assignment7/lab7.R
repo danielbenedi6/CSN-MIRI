@@ -187,7 +187,7 @@ plot_tree_eigen <- function(N,step,num_rep)  {
   }
 
   data <- data.frame(probs, eigenvals)
-  boxplot(eigenvals ~ probs)
+  boxplot(eigenvals ~ probs, xlab = "Children per node")
   title("Boxplot of the  Eigenalues of the Tree Graph")
   data
 }
