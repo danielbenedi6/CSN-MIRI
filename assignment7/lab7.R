@@ -81,7 +81,7 @@ plot_erdos_renyi <- function(N, step, num_rep, gamma, epsilon) {
     max_eigenvalue <- max(eigen(as_adj(G))$values)
     beta <- gamma / max_eigenvalue + epsilon
     res <- repetition(num_rep, G, gamma, beta, 100)
-    data <- rbind(data, data.frame(prob = p,x = seq(0.00001, 1, 1 / (length(res) - 1)), y = res))
+    data <- rbind(data, data.frame(prob = p,x = seq(0.00001, 1, 1 /length(res)), y = res))
   }
   
   ggplot(data, aes(x = x, y = y, color = factor(prob))) +
@@ -125,7 +125,7 @@ plot_barabasi_albert <- function(N, step, num_rep, gamma, epsilon) {
     max_eigenvalue <- max(eigen(as_adj(G))$values)
     beta <- gamma / max_eigenvalue + epsilon
     res <- repetition(num_rep, G, gamma, beta, 100)
-    data <- rbind(data, data.frame(prob = p,x = seq(0.00001, 1, 1 / (length(res) - 1)), y = res))
+    data <- rbind(data, data.frame(prob = p,x = seq(0.00001, 1, 1 /length(res)), y = res))
   }
   
   ggplot(data, aes(x = x, y = y, color = factor(prob))) +
@@ -162,7 +162,7 @@ plot_small_world <- function(N, step, num_rep, gamma, epsilon) {
     max_eigenvalue <- max(eigen(as_adj(G))$values)
     beta <- gamma / max_eigenvalue + epsilon
     res <- repetition(num_rep, G, gamma, beta, 100)
-    data <- rbind(data, data.frame(prob = p,x = seq(0.00001, 1, 1 / (length(res) - 1)), y = res))
+    data <- rbind(data, data.frame(prob = p,x = seq(0.00001, 1, 1 /length(res)), y = res))
   }
   
   ggplot(data, aes(x = x, y = y, color = factor(prob))) +
@@ -200,7 +200,7 @@ plot_tree <- function(N, step, num_rep, gamma, epsilon) {
     max_eigenvalue <- max(eigen(as_adj(G))$values)
     beta <- gamma / max_eigenvalue + epsilon
     res <- repetition(num_rep, G, gamma, beta, 100)
-    data <- rbind(data, data.frame(prob = p,x = seq(0.00001, 1, 1 / (length(res) - 1)), y = res))
+    data <- rbind(data, data.frame(prob = p,x = seq(0.00001, 1, 1 /length(res)), y = res))
   }
   
   ggplot(data, aes(x = x, y = y, color = factor(prob))) +
@@ -312,7 +312,7 @@ plot_lattice <- function(N, step, num_rep, gamma, epsilon) {
     max_eigenvalue <- max(eigen(as_adj(G))$values)
     beta <- gamma / max_eigenvalue + epsilon
     res <- repetition(num_rep, G, gamma, beta, 100)
-    data <- rbind(data, data.frame(prob = p,x = seq(0.00001, 1, 1 / (length(res) - 1)), y = res))
+    data <- rbind(data, data.frame(prob = p,x = seq(0.00001, 1, 1 /length(res)), y = res))
   }
   
   ggplot(data, aes(x = x, y = y, color = factor(prob))) +
