@@ -68,7 +68,7 @@ plot_erdos_renyi_eigen <- function(N,step,num_rep)  {
   }
   
   data <- data.frame(probs, eigenvals)
-  boxplot(eigenvals ~ probs)
+  boxplot(eigenvals ~ probs, xlab = "Expected density")
   title("Boxplot of the  Eigenalues of the Erdös-Renyi Graph")
   data
 }
@@ -149,7 +149,7 @@ plot_small_world_eigen <- function(N,step,num_rep)  {
   }
   
   data <- data.frame(probs, eigenvals)
-  boxplot(eigenvals ~ probs)
+  boxplot(eigenvals ~ probs, xlab="Rewiring probability")
   title("Boxplot of the  Eigenalues of the Small-World Graph")
   data
 }
@@ -176,21 +176,21 @@ plot_small_world <- function(N, step, num_rep, gamma, epsilon) {
 
 ####TREE FUNCTIONS####
 ## No sense to do this experiment because tree is deterministic
-# plot_tree_eigen <- function(N,step,num_rep)  {
-#   probs  <- rep(seq(step,1,step), num_rep)
-#   eigenvals <- rep(0,length(probs))
-#   c <- 0
-#   for(p in probs) {
-#     c <- c + 1
-#     G <- make_tree(N, children = 2, mode = "undirected")
-#     eigenvals[c] <-max(eigen(as_adj(G))$values)
-#   }
-#   
-#   data <- data.frame(probs, eigenvals)
-#   boxplot(eigenvals ~ probs)
-#   title("Boxplot of the  Eigenalues of the Tree Graph")
-#   data
-# }
+plot_tree_eigen <- function(N,step,num_rep)  {
+  probs  <- rep(seq(step,5*step,step), num_rep)
+  eigenvals <- rep(0,length(probs))
+  c <- 0
+  for(p in probs) {
+    c <- c + 1
+    G <- make_tree(N, children = 2, mode = "undirected")
+    eigenvals[c] <-max(eigen(as_adj(G))$values)
+  }
+
+  data <- data.frame(probs, eigenvals)
+  boxplot(eigenvals ~ probs)
+  title("Boxplot of the  Eigenalues of the Tree Graph")
+  data
+}
 
 plot_tree <- function(N, step, num_rep, gamma, epsilon) {
   data <- data.frame()
@@ -411,7 +411,7 @@ for (p0 in listp0) { # We will experiment varying the percentage of initial inff
   
   print("    Saving results...")
   
-  print(xtable(eigens, type="latex", auto=TRUE),  include.rownames=FALSE, file=sprintf("./tables/eigens_%.2f.tex",p0))
+  print(xtable(eigens, type="latex", auto=TRUE),  include.rownames=FALSE, file=sprintf("./tables/eigens.tex"))
   
   max_len <- max(length(res_er), length(res_ba), length(res_ws), length(res_tree), length(res_star))
   res_er <- append(res_er, rep(res_er[length(res_er)], max_len-length(res_er)))
@@ -451,10 +451,10 @@ filename<-paste0(filepath, '/SmallWorldEigenvalues.pdf')
 pdf(filename)
 SmallWorldEigenvalues <- plot_small_world_eigen(N, step, num_rep)
 dev.off()
-# filename<-paste0(filepath, '/TreeEigenvalues.pdf')
-# pdf(filename)
-# TreeEigenvalues <- plot_tree_eigen(N, step, num_rep)
-# dev.off()
+filename<-paste0(filepath, '/TreeEigenvalues.pdf')
+pdf(filename)
+TreeEigenvalues <- plot_tree_eigen(N, 2, num_rep)
+dev.off()
 # filename<-paste0(filepath, '/StarEigenvalues.pdf')
 # pdf(filename)
 # StarEigenvalues <- plot_star_eigen(N, step, num_rep)
