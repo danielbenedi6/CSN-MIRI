@@ -1,0 +1,15 @@
+\subsection{Description of the networks}
+We performed our analysis over four networks:
+\begin{itemize}
+    \item \textbf{Zachary's karate club} is a social network of a university karate club described in the paper \cite{Zachary1977} by Wayne W. Zachary. It consists of a network of 34 vertices that represent its members with a link between them if they interacted outside. This network has a ground truth given by a conflict that split the club.
+    \item \textbf{Random scale-free network}. We generate an artificial network using the Barbási-Albert model \cite{Albert2002} that allows us to generate random scale-free networks using a preferential attachment which allows us to know the ground truth. Our network had 200 vertices with 800 edges, with $4$ clusters with equal probability and an affinity of $1$ and $0.1$. 
+    \item \textbf{ENRON} \cite{Klimt2004} is an email communication network that covers all email communication within a dataset of around half million emails. These data were originally made public by the Federal Energy Regulatory Commission during its investigation. Network nodes are email addresses, and if an address $i$ sent at least one email to $j$, the graph contains an undirected edge between $i$ and $j$. This network is a multigraph, which means that there are parallel edges; we simply transformed it into a simple graph by removing the parallel edges. The final network has 184 vertices and 2216 edges. This network does not have ground truth communities. Moreover, the network is not connected, so we opted to take the largest component by removing isolated nodes.
+    \item \textbf{DBLP} provides a comprehensive list of research papers in computer science. In this network \cite{Yang2012, snapnets}, each vertex represents one author, and two authors are connected if they publish at least one paper together. The publication venue defines an individual ground truth community. The network has 317080 nodes with 1049866 edges and 5000 communities. This network was too large, so we opt for taking a random induced subgraph (explained in Section \ref{sec:sampling}).
+\end{itemize}
+
+In table \ref{tab:summary}, we show a small summary of the networks properties that we used.
+
+\input{tables/summary.tex}
+
+\subsection{Sampling by Random Walk \label{sec:sampling}}
+Firstly, we proposed that the random sampling of the DBLP network be performed by uniformly sampling the vertices and taking the induced subgraph. We observed that the mean degree decreased from around 6 to almost 2. This behavior was explained by \cite{Stumpf2005} which led to biased degrees. Instead, we proposed to use a random walk, although it is known that it also produces biased subgraphs \cite{Gjoka2010,Maiya2011}. They propose alternative methods for samplings that preserve properties, but we believe that implementing them was out of the scope of this report.

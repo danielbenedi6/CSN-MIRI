@@ -1,0 +1,70 @@
+\documentclass{article}
+\usepackage[utf8]{inputenc}
+\usepackage{amsmath}
+\usepackage{amsfonts}
+\usepackage{amsthm}
+\usepackage{parskip}
+\setlength{\parindent}{0em}
+\setlength{\parskip}{1em}
+\usepackage{datetime}
+\usepackage{algorithm}
+\usepackage{algpseudocode}
+\usepackage{booktabs}
+\usepackage{hyperref}
+\usepackage{enumerate}% http://ctan.org/pkg/enumerate
+\usepackage{graphicx}
+\usepackage[
+	citestyle=ieee, 
+    bibstyle=ieee,
+    style=numeric-comp,
+    sorting=nty,
+    maxbibnames=99, % Make sure we are printing all authors in the appendix
+]{biblatex}
+\addbibresource{references.bib}
+\usepackage{caption}
+\usepackage{subcaption}
+\usepackage{multicol}
+\usepackage{pgffor} % Allows using foreach
+\usepackage[section]{placeins} % Avoids placing floats before section
+\usepackage[left=2.5cm, right=2.5cm]{geometry}
+
+\newdateformat{monthyeardate}{%
+  \monthname[\THEMONTH], \THEYEAR}
+
+\title{Complex and Social Networks \\ Assignment 4 - Non-linear regression on dependency trees}
+\author{Daniel Benedí García\\ Fernando Martín Canfrán}
+\date{\monthyeardate\today}
+
+\begin{document}
+\maketitle
+\begin{multicols}{2}
+\tableofcontents
+\end{multicols}
+
+\section{Introduction}
+\label{sec:introduction}
+\input{intro}
+
+\section{Results}
+\label{sec:results}
+\input{results}
+
+\section{Discussion}
+\label{sec:discussion}
+\input{discussion}
+
+\section{Methods}
+\label{sec:methods}
+\input{methods}
+
+\addcontentsline{toc}{section}{References}
+\printbibliography
+
+\newpage
+% Activate the appendix
+% from now on sections are numerated with capital letters
+\appendix
+\input{appendices}
+
+
+\end{document}

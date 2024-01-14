@@ -1,0 +1,44 @@
+\subsection{Methodology}
+We have modeled the evolution of an epidemic spread for the same kind of network as in the previous task. For all of them, we have plotted the evolution of the epidemic when the relation between $\beta$, $\gamma$ is slightly above and below the theoretical epidemic threshold. The theoretical epidemic threshold states whether the infection dies out over time or survives and becomes an epidemic. Chakrabarti et al. empirically observed in \cite{Chakrabarti2008} that such a relation is indeed: 
+$$
+    \frac{\beta}{\gamma} = \frac{1}{\lambda_1}
+$$
+with $\lambda_1$ being the leading eigenvalue. Therefore, we have fixed some values of $\gamma$ and calculated $\beta = \frac{\beta}{\lambda_1} + \varepsilon, \varepsilon\in\{-0.05,0.05\}$, in order to analyze whether the epidemic threshold was the expected one for each network. Because, if the relation is above, we expect the epidemic to occur; and if the relation is below, we expect no epidemic to occur.
+
+Moreover, we have used a set of different values for $\gamma$ and the parameters that allow us to define the different networks such as:
+\begin{itemize}
+    \item In the Erdös-Renyi model, the expected density
+    \item In the Barbási-Albert model, the number of clusters
+    \item In the Watts-Strogatz model, the rewiring probability
+    \item In the Tree model, the number of children per node
+\end{itemize}
+
+The set of values used for $\gamma$ are:
+$$
+    \gamma \in \{ 0.15, 0.3, 0.45, 0.6, 0.75, 0.9 \}
+$$
+
+All experiments have been performed with 10 repetitions in order to reduce the noise produced by the random nature of the epidemic simulation.
+
+\subsection{Results}
+In the following appendices, we present the outcomes obtained from various network models. Specifically, Appendix \ref{Appendix:ErdosRenyi} showcases the results from the Erdös-Renyi model, while Appendix \ref{Appendix:BarabasiAlbert} displays the outcomes from the Barbäsi-Albert model. Additionally, Appendix \ref{Appendix:SmallWorld} provides the results for the Watts-Strogatz model, Appendix \ref{Appendix:Star} presents the outcomes of the Star model, and Appendix \ref{Appendix:Tree} exhibits the results for the Tree model.
+
+Results show that, in general, in the first case (case where the previously mentioned relation is slightly higher than threshold), the number of infected nodes grows until it reaches a stabilization point, meaning that the infection becomes an epidemic with a stable rate of infected nodes or saturation point, which is different for each type of graph, while in the second case (case where the previously mentioned relation is slightly lower than threshold) shows that the number of infected nodes drops to zero, meaning the infection dies and therefore does not turn into an epidemic. 
+
+This behavior can be observed for all values of $\gamma$ and different configurations of the networks that have been used in these experiments, supporting the existence of this theoretical threshold in complex networks such as those that define social interconnections in real life.
+
+From plots in \ref{Appendix:ErdosRenyi}, \ref{Appendix:BarabasiAlbert} and \ref{Appendix:SmallWorld}, one can observe that the higher $\gamma$, the less time it takes to reach the death point of the infection, when we are below the epidemic threshold. However, the higher $\gamma$, the longer it takes to reach equilibrium or convergence in the number of infected nodes, and a higher number of infected nodes will be required to reach the expected saturation point. Additionally, it is worth mentioning that as the value of $\gamma$ increases, the equilibrium point decreases. On the other hand, we observed that the magnitude of the leading eigenvector does not seem to be as determinant as $\gamma$.
+
+The deterministic models of graph generation demonstrate a similar behavior to the random models in terms of the spread of the epidemic. The epidemic threshold can be determined from the plots in Appendix \ref{Appendix:Star} and Appendix \ref{Appendix:Tree}. These plots indicate that the networks generated using deterministic models tend to restrict the spread of infections to a smaller expected number of infected nodes. This can be attributed to the specific structural properties of these graphs, leading to different patterns of epidemic spread. 
+
+In a tree graph, the absence of cycles implies a hierarchical structure with a unique path from the root to any node. This hierarchical arrangement often results in a linear spread of infection. Each node in the tree has only one direct path to the source of infection, and, as a consequence, the infection tends to spread linearly along the branches of the tree, causing a smaller percentage of infected nodes (almost zero when the recovery probability is high). Furthermore, since nodes in a tree have fewer connections compared to random graphs, the potential for widespread transmission is limited. This results in a slower and more localized epidemic spread. 
+
+In a star graph, all peripheral nodes are directly connected to a central node. The central node plays an important role in the transmission of infection to the periphery. The infection can spread only through two routes: from the central node to the peripheral nodes and vice versa. This limited set of transmission routes restricts the overall spread of the epidemic.
+
+From these observations some interesting conclusions can be inferred:
+\begin{itemize}
+\item The experimental validation of the theoretical epidemic threshold demonstrates its existence across a range of graphs, created through the use of either random  or deterministic models. Notably, there is no discernible difference between these graph types in terms of the existence of an epidemic threshold, as all consistently manifest its inherent presence due to obvious behavior differences, such as infection's extinction when experiments have taken place below this threshold or infection evolution into epidemic when experiments have taken place above this threshold.
+\item In the context of infection dynamics, the relation between $\gamma$ and $\beta$ plays a predominant role, overshadowing the impact of the configuration of the type of network.
+\item Structural characteristics of tree and star graphs, such as linear spread in trees and centralized connectivity in stars, contribute to a more localized and constrained epidemic spread compared to the more interconnected and random nature of graphs like Erdös-Renyi, Barabási-Albert, and Watts-Strogatz. These insights into the relationship between graph structure and epidemic dynamics are valuable for understanding how network topology influences the transmission of infectious diseases and can inform strategies for disease control and prevention.
+
+\end{itemize}

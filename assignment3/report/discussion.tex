@@ -1,0 +1,51 @@
+This section deep dives into the results before presented. The models chosen generate graphs that sim to be hihgh-fidelity reproductions of the original SDN. Both the generation dynamics and the parameters chosen to replicate the SDN structure have an impact on the result.
+
+\subsection{Binomial model}
+The results for this model show errors around 35\% in the computation of the closeness centrality - see Figure \ref{fig:closeness_distribution}-. As will be further discussed, this model seems to perform poorly given the characteristics of the original graph it uses to generate the model; only the number of vertices and edges.
+
+\subsection{Switching model}
+The results for this model show errors up to 11,5\% (for Basque), but are around below 5\% in most cases.
+
+The switching model along its implementation is described in detail by algorithm \ref{algo:switching-model} in section \ref{sec:methods}. The goal of this model is to generate randomized graphs that simulate the original SDN based on the network structure (edges) and a tunable parameter that dictates the number of switchings performed. A switching is the swapping of two edges of the same graph.\\
+The presrevation of the original degree sequence in this dynamics yields two relevant issues natural to the model, briefly discussed in the following paragraphs.
+
+\paragraph{On the preservation of the original degree sequence} The type of switchings that guarantee the validty of the resulting graph are those preserving of the original degree sequence. However, picking edges uniformly at random does not always result in switchings of this kind. 
+
+\paragraph{On the allowing of forbidden eges} Forcing the preservation of the degree sequence while ensuring randomness can result in a violation of the natural graph structure of the network. Notice that edge switching by picking the edges u.a.r. can yield non-simple graphs - this is, with multi-edges -, or create loops, which invalidates the graph as a syntactic dependency network since these networks must always be trees \cite{i2004patterns}.\\
+More discussion on the correct performing of switchings can be found in the Methods, section \ref{sec:methods}.
+
+The results for this model are much more precise than those of the Binomial one, as clearly pictured in Figure \ref{fig:closeness_distribution}.
+
+\subsection{Some relevant questions}
+\paragraph{On the null hypothesis} The studied hypothesis were I (Binomial) and II (Switching), as presented in the introduction. For these two models tested, the metric of the closeness centrality is significantly larger for ...
+
+\paragraph{Language analysis} The set of studied languages is diverse in the sense that contains languages from different linguistic families. In general terms, closeness centrality provides an intuition of how efficient is the network at spreading information; in the case of SDN it indicates how well mixed are the words of the corpus in real sentences of the language. This indirectly provides some sense of other linguistic characteristics; flexibility of sentence structure, morphology (or word inflexion), sentence length, richness of idiomatic constructions or collocations and more.
+
+For example, some languages, like English, have a more linear structure, while others, like Arabic, have a more flexible word order. This can affect how words are connected in the syntactic
+Languages with rich inflectional systems, such as Czech and Turkish, may have more complex networks due to the different forms a word can take, potentially affecting centrality.
+
+\paragraph{Bounds on closeness centrality \label{sec:bounds}} We comment the results of Hu et al. (2022) \cite{hu2022bounds} on bounds for closeness centrality $\mathcal{C}$. Their work provides plenty of bounds for closeness centrality, but these are often dependant on the mean distance of the graph, which for large scale-free networks can be an even more computationally demanding task than the simple closeness centrality computation. However, some simpler results such as expression 7 of Corollary 2 - expression \eqref{eq:CCHuo1} in this report - or Corollary 8  - expression \eqref{eq:CCHuo2} in this report - can be used to draw some extra information from the results.\\
+The bounds for each studied language following equations \eqref{eq:CCHuo1} and \eqref{eq:CCHuo2} can be seen in Table \ref{tab:huo}.
+
+\begin{minipage}{0.49\textwidth}
+    \begin{equation}\label{eq:CCHuo1}
+    \mathcal{C} \geq \dfrac{3}{N+1}
+\end{equation}
+\end{minipage}
+\begin{minipage}{0.49\textwidth}
+    \begin{equation}\label{eq:CCHuo2}
+    \mathcal{C} \leq 1-\dfrac{2}{N}+\dfrac{4(N+1)}{N\left((N-1)(N+2)-2E\right)}
+\end{equation}
+\end{minipage}
+
+\input{tables/thuo}
+
+It is evident that these bounds are weak and do not provide useful information in terms of the actual value of the closeness centrality. However, the lower bounds suggest an ordering of the measures, from which we would expect Basque or Greek to have the greatest values of closeness centrality. Both the exact measure of the closeness centrality of all studied languages and our results from the Binomial and Switching model prove the ordering seen in Table \ref{tab:huo} is not correct. Notice how these bounds have been computed taking into account the number or nodes and edges in the graph - see expression \eqref{eq:CCHuo1} for the lower bound and \eqref{eq:CCHuo2} for the upper bound -. Our results have shown that the model based on this parameters of the graph; the Binomial, perofrms fairly worse than our second model, the Switching one, which incorpotates the structure of the SDN into the generation of graphs.\\
+We believe this reinforces our conclusion that modelling giving more importance to the structure of the network than only taking into account the number of edges and vertices is more accurate.
+
+\subsection{Conclusions}
+Some previous works have already covered some results provided in this report. For instance, it has been suggested that "the organization of syntactic networks strongly differs from the Erdös-Rényi graph" \cite{i2004patterns}. This is confirmed by our results (figure \ref{fig:closeness_distribution}), which showed that the closeness centrality is far from the input SDN. We believe that this is caused by the fact that it only takes into account the number of edges and vertices, because the bounds presented in section \ref{sec:bounds} are also bad and they only take into account the same parameters.
+
+On the other hand, we expected the switching model to have a $p$-value higher than 0 (see appendix \ref{appendix:cc}), because it keeps the degree sequence intact, so it was reasonable that the closeness centrality would not be too far from the input graph. But experimentally, we obtained that the $p$-value was 0 (see table \ref{tab:2}). In contrast, our supposition that it would not be far from the metric of the input graph was correct as shown in figure \ref{fig:closeness_distribution} because the experimental values were close, although not close enough. We suspected that this was caused by the fact that we approximate the closeness centrality instead of computing it exactly. Therefore, we performed a validation (check section \ref{sub:validation}) which proved us that it was not a matter of our approximation. 
+
+We can conclude that both the binomial and the switching model does not keep the centrality closeness neither is greater for any tested language syntactic dependency networks. Although, the switching model does a better approximation.

@@ -1,0 +1,25 @@
+\begin{table}[!htb]
+\centering
+\begin{tabular}{ccccccccc}
+                                                         & \multicolumn{8}{c}{\textbf{Growth Model}}                                           \\ \cline{2-9} 
+                                                         & 0    & 1    & \multicolumn{2}{c}{2} & \multicolumn{2}{c}{3} & \multicolumn{2}{c}{4} \\
+\textbf{Graph Model}                                     & $a$  & $a$  & $a$        & $b$      & $a$         & $c$     & $a$        & $d_1$    \\ \hline
+\multicolumn{1}{r|}{Barabási-Albert}                     & 0    & 1.44 & 1.44       & 0.5      & 524.83      & 0       & 76.24      & -1.95    \\
+\multicolumn{1}{r|}{Growth + Random Attachment}          & 0    & 0.05 & 10.43      & 0.09     & 30.11       & 0       & 2.67       & -1.56    \\
+\multicolumn{1}{r|}{No Growth + Preferential Attachment} & 0.01 & 4.8  & 0.01       & 1        & 1046.12     & 0       & 241.88     & -1.96   
+\end{tabular}
+
+\vspace{1em}
+
+\begin{tabular}{ccccccccccccc}
+\multicolumn{2}{c}{0+} & \multicolumn{2}{c}{1+} & \multicolumn{3}{c}{2+} & \multicolumn{3}{c}{3+}     & \multicolumn{3}{c}{4+}         \\
+$a$       & $d$        & $a$      & $d$         & $a$    & $b$  & $d$    & $a$      & $c$ & $d$       & $a$     & $d_1$    & $d_2$     \\ \hline
+0         & 383.23     & 1.44     & 0           & 0.69   & 0.23 & -6.21  & 848.49   & 0   & -844.52   & 3.23    & 26430.96 & -34.85    \\
+0         & 29.8       & 0.01     & 26.38       & 18.01  & 0.07 & -10.21 & 4815.89  & 0   & -4786.09  & 2.93    & 4.54     & -3.4      \\
+0.01      & 0.74       & 7.2      & -1799.99    & 0.01   & 1    & -0.19  & 98626.47 & 0   & -98596.02 & 1506.69 & 60.81    & -16308.43
+\end{tabular}
+
+\caption{Values of fitted parameters per curve and graph model. Models 0 to 4 are shown above, and models 0+ to 4+ below.} \label{tab:fitted_evol}
+\end{table}
+
+

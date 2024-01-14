@@ -1,0 +1,25 @@
+\begin{table}[!htb]
+\centering
+\begin{tabular}{cccccccc}
+\multicolumn{1}{r}{\textbf{}} & \multicolumn{5}{c}{\textbf{Probability Model}} \\ \cline{2-8} 
+\multicolumn{1}{c}{\textbf{}} &
+  \multicolumn{1}{c}{D. Poisson} &
+  \multicolumn{1}{c}{D. Geom} &
+  \multicolumn{1}{c}{Zeta} &
+  \multicolumn{2}{c}{Truncated Z} &
+  \multicolumn{2}{c}{Altmann} \\
+\multicolumn{1}{c}{\textbf{Graph Model}} &
+  \multicolumn{1}{c}{$\lambda$} &
+  \multicolumn{1}{c}{$q$} &
+  \multicolumn{1}{c}{$\gamma_1$} &
+  \multicolumn{1}{c}{$\gamma_2$} &
+  \multicolumn{1}{c}{$k_{max}$}  &
+  \multicolumn{1}{c}{$\gamma_3$} &
+  \multicolumn{1}{c}{$\delta$} \\ \midrule
+\multicolumn{1}{r}{Barabási-Albert} & 5.98 & 0.17 & 1.49 & 0 & 7120 & 0 & 0.18 \\
+\multicolumn{1}{r}{Growth + Random Attachment} & 6.99 & 0.14 & 1.42 & 0 & 70 & 0 & 0.15 \\
+\multicolumn{1}{r}{No Growth + Preferential Attachment} & 6008 & 0 & 1.11 & 0 & 8401 & 0 & 0 \\
+\bottomrule
+\end{tabular}
+\caption{Values of fitted parameters per distribution and graph model. Note that the model of a Zeta distribution with $\gamma = 3$ is not shown because no parameters were estimated.} \label{tab:fitted}
+\end{table}

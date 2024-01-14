@@ -1,0 +1,23 @@
+
+\begin{table}[ht]
+\centering
+\begin{tabular}{lll}
+    \toprule
+    \textbf{Metric} & \textbf{Enron} & DBLP \\
+    \midrule
+    \big\uparrow Internal Density & Edge Betweenness & Label Propagation\\
+    \big\uparrow Edges Inside & Label Propagation & Spin-Glass \\
+    \big\uparrow Average Degree & Label Propagation& Louvain \\
+    \midrule
+    \big\downarrow Expansion & Label Propagation & Louvain \\
+    \big\downarrow Cut Ratio & Label Propagation & Louvain \\
+    \midrule
+    \big\downarrow Conductance & Label Propagation & Louvain \\
+    \big\downarrow Normalized Cut & Label Propagation & Louvain \\
+    \big\downarrow Maximum ODF & Label Propagation & Louvain    \\
+    \big\downarrow Average ODF & Label Propagation & Louvain \\
+   \bottomrule
+\end{tabular}
+\caption{Best values for communities without ground truth}
+\label{tab:best_no_canonical}
+\end{table}

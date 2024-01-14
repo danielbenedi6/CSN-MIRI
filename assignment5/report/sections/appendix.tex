@@ -1,0 +1,23 @@
+\section{Graph Metrics}
+\begin{landscape}
+\input{tables/karate_significance}
+\input{tables/barabasi_albert_significance}
+\input{tables/enron_significance}
+\input{tables/DBLP_significance}
+\end{landscape}
+
+\section{Networks with clusters \label{append:graphs}}
+\def\Networks{karate,BA,enron,dblp}
+\def\Methods{baseline,Louvain,Label Propagation,Edge Betweenness,Fast Greedy,Spin-Glass}
+
+\foreach \network in \Networks
+{
+    \foreach \method in \Methods
+    {
+    \begin{figure}[!htb]
+        \centering
+        \includegraphics[width=0.7\textwidth]{figures/\network_\method.pdf}
+        \caption{Network \network with label using the cannonical and colors the clustering produced by \method}
+    \end{figure}
+    }
+}

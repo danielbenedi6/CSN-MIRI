@@ -1,0 +1,30 @@
+ function auxiliary\_functions in clusterAnalytics and 
+computes the "Given a weighted graph and a partition into communities, returns the internal edge weight, the size, and the cut weight for each community" 
+
+Size comes directly from auxiliary functions $n_s$
+$m_s$ = edge weight
+$c_s$ = cut weight
+
+
+internal density is computed by $m_s * 2/(n_s * (n_s - 1))$
+
+edges inside = $m_s$
+
+av degree = $m_s / n_s$
+
+FOMD (Fraction Over Median Degree): Given a weighted graph and a partition into communities, returns the fraction of nodes of each community whose internal degree (i.e. the degree accounting only intra-community edges) is greater than the median degree of the whole graph.
+
+expansion = $ c_s/n_s$
+
+cut ratio = c_s/(n_s * (n - n_s))
+conductance = c_s/(2 * m_s + c_s)
+norm cut = c_s/(2 * m_s + c_s) + c_s/(2 * (sum(m_s) - m_s) + c_s)
+density ratio = local_density_ratio_Rcpp(aux_vals)
+    D[, c("max ODF", "average ODF", "flake ODF")] <- out_degree_fractions(edgelist = el, 
+        com = com)
+
+TPR = triangle_participation_ratio_communities -> Computes the triangle participation ratio (proportion of vertices that belong to a triangle). The computation is done to the subgraphs induced by each of the communities in the given partition.
+
+internal_weight <- sum(m_s)
+total_weight <- internal_weight + sum(c_s)/2
+coverage <- internal_weight/total_weight

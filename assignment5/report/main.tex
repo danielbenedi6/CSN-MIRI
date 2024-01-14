@@ -1,0 +1,128 @@
+\documentclass[a4paper,twoside]{article}
+\usepackage[utf8]{inputenc} 
+\bibliographystyle{acm}
+
+\usepackage[usenames,dvipsnames]{xcolor}
+
+\definecolor{light-gray}{gray}{0.95}
+\definecolor{light-yellow}{RGB}{255, 255, 222}
+\definecolor{light-green}{RGB}{227, 255, 235}
+\usepackage{lscape}
+\usepackage{graphicx}
+\usepackage{enumitem}
+\usepackage{multirow}
+\usepackage{float} 
+\usepackage{verbatim} 
+\newcommand{\tabitem}{~~\llap{\textbullet}~~}
+\usepackage{tabu}
+\usepackage{booktabs}% for better rules in the table
+\usepackage{anysize}
+\usepackage{wrapfig}
+\usepackage{algorithm}
+\usepackage{algcompatible}
+\usepackage{amsmath}
+\usepackage{tikz}
+\usepackage{multicol}
+\usepackage[export]{adjustbox}
+\usepackage{ragged2e}
+\usepackage{caption}
+\usepackage{subcaption}
+\usepackage[toc,page]{appendix}
+\usepackage{varwidth} % must be loaded after array
+\usepackage{biblatex} % per la bibliografia
+\bibliography{bibliography.bib}
+\usepackage{url}
+\usepackage{hyperref}
+\hypersetup{
+    colorlinks,
+    citecolor=black,
+    filecolor=black,
+    linkcolor=black,
+    urlcolor=black
+}
+
+\pagestyle{plain}
+\oddsidemargin  -5mm
+\evensidemargin -5mm
+\topmargin      -5mm
+\textwidth      170mm
+\textheight     245mm
+\parskip    1.5ex
+\parindent   0cm
+\footskip 15mm
+
+\usepackage[11pt]{moresize}
+\usepackage{fancyhdr}
+\usepackage{amssymb}
+\usepackage{amsmath}
+\usepackage[makeroom]{cancel}
+\usepackage{algorithm}
+\usepackage{algpseudocode}
+\usepackage{pgffor} % Allows using foreach
+
+\usepackage{datetime}
+\newdateformat{monthyeardate}{%
+  \monthname[\THEMONTH], \THEYEAR}
+
+\pagestyle{fancy}
+\fancyhf{}
+\chead{CSN \hfill Lab Session 5 – Finding and assessing community structure \hfill Daniel Benedí \& Jan Herlyn}
+
+\unitlength 1cm
+
+
+\graphicspath{ {./images/} }
+\begin{document}
+
+\begin{titlepage}
+    \begin{center}
+        \vspace*{1cm}
+ 
+        \Huge
+        \textbf{CSN Lab Session 5}
+        \vspace{1.5cm}
+
+        \LARGE
+        \textbf{Finding and assessing community structure}
+        \vfill
+        \includegraphics[scale = 0.6]{upclogo}
+        \vfill
+        Daniel Benedí \& Jan Herlyn
+        \vspace{0.8cm}
+      
+        Complex Social Networks\\     
+        UPC\\
+        \monthyeardate\today
+             
+    \end{center}
+\end{titlepage}
+
+\newpage
+    \tableofcontents
+\newpage
+
+\section{Introduction}
+\input{sections/introduction}
+
+\section{Results \label{sec:results}}
+\input{sections/results}
+
+\section{Discussion\label{sec:discussion}}
+\input{sections/discussion}
+
+\section{Methods \label{sec:methods}}
+\input{sections/methods}
+
+\newpage
+% Activate the appendix
+% from now on sections are numerated with capital letters
+\appendix
+\input{sections/appendix}
+
+
+\end{document}
+
+
+
+
+

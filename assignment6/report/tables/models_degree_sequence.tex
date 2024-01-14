@@ -1,0 +1,18 @@
+\begin{table}[ht]
+\centering
+\begin{tabular}{@{}lcll@{}}
+\toprule
+Model               & Probability function                           & Likelihood function                                        \\ \midrule
+Displaced Poisson &
+  $ p(k) = \lambda^k\frac{e^{-\lambda}}{k!(1-e^{-\lambda})} $ &
+  $ \mathcal{L}(\lambda) = M \log \lambda - N(\lambda + \log(1-e^{-\lambda})) - C $ \\
+Displaced Geometric & $ p(k) = (1-q)^kq $                            & $ \mathcal{L}(q) = (M - N)\log(1-q)+N\log q $              \\
+Fixed Zeta          & $ p(k) = \frac{k^{-3}}{ \zeta(3) } $           & \multicolumn{1}{c}{-}                                      \\
+Zeta                & $ p(k) = \frac{k^{-\gamma}}{ \zeta(\gamma) } $ & $ \mathcal{L}(\gamma) = -\gamma M' - N \log\zeta(\gamma) $ \\
+Truncated Zeta &
+  \begin{tabular}[c]{@{}l@{}}$ p(k) = \begin{cases} \frac{1}{\sum_{x=1}^{k_{max}}x^{-\gamma}}k^{-\gamma} & \text{if } k \leq k_{max}\\     0  & \text{otherwise}\\   \end{cases} $\end{tabular} &
+  $ \mathcal{L}(\gamma,k_{max}) = -\gamma M' - N \log \sum_{x=1}^{k_{max}}x^{-\gamma} $ \\
+Altmann             &  $p(k) = k^{-\gamma}e^{-\delta k}\frac{1}{\sum_{x=1}^Nx^{-\gamma}e^{-\delta x}}$  & $\mathcal{L}(\gamma, \delta) = - \gamma M' - \delta M - N \log(d)$ \\ \bottomrule
+\end{tabular}
+\caption{Models used to analyse the degree distribution.}\label{tab:models_deg_dist}
+\end{table}

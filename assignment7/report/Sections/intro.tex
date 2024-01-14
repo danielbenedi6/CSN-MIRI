@@ -1,0 +1,13 @@
+\subsection{Context}
+The simulation of infectious diseases over complex networks serves as a powerful tool to understand the dynamics of epidemics and assess the impact of various network structures on disease spread. In this lab assignment, we delve into the realm of the Susceptible-Infectious-Susceptible (SIS) model, a widely used framework for studying the transmission dynamics of infectious diseases within populations. The goal is to validate the epidemic threshold, denoted as $\lambda_{1}$ and predicted by \cite{Chakrabarti2008}, for arbitrary networks.
+
+The SIS model considers nodes within a network as individuals, with each node having two possible states: susceptible or infected. At each time step, the infected nodes have a chance to recover, while trying to infect their neighbors with certain probabilities, denoted $\gamma$ and $\beta$, respectively. Updates to the statuses of the nodes occur in parallel, ensuring that the statuses at time t only depend on the statuses at time t-1 of the other nodes.
+
+\subsection{This work}
+The focus of this simulation is on networks of size n = 1000, encompassing various network models such as Erdös-Rényi random graphs (ER), Barábasi-Albert scale-free networks (BA) and Watts-Strogatz small world networks (WS). Additionally, two other network models will be explored: trees and star networks.
+
+The tasks involve running simulations with fixed sets of $\gamma$, $\beta$ and initial infection fraction ($p_{0}$) values, studying the proportion of infected nodes over time for each network. The objective is to identify networks that exhibit varying propensities for epidemic outbreaks. A key aspect of the analysis involves calculating the leading eigenvalue of each network to gain insight into its structural characteristics and relate them to the observed epidemic behavior.
+
+Additionally, the assignment involves determining the epidemic threshold for each type of network. Two sets of parameter values for $\gamma$ and $\beta$, one slightly above and one slightly below the threshold, will be chosen to simulate the spread of the disease. The results will be compared with theoretical expectations, providing insight into the consistency between the simulation outcomes and the established epidemiological theories.
+
+Through this comprehensive exploration of different network structures and their impact on disease spread, our aim is to improve our understanding of complex network epidemiology and validate the theoretical predictions associated with the SIS model.

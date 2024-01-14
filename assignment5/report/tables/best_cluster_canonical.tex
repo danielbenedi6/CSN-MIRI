@@ -1,0 +1,24 @@
+\begin{table}[ht]
+\centering
+\begin{tabular}{l|ll|ll}
+\toprule
+\textbf{Metric} & \multicolumn{2}{l|}{\textbf{Karate} }    & \multicolumn{2}{l}{\textbf{Barabasi Albert Blocks} }      \\ 
+\hline
+   & \multicolumn{1}{l|}{best} & second best &  \multicolumn{1}{l|}{best} & second best\\ \hline
+   
+  \big\uparrow Internal Density  & \multicolumn{1}{l|}{Edge Betweenness} & Walktrap &   \multicolumn{1}{l|}{Walktrap} & Spin Glass \\ 
+ \big\uparrow Edges Inside  & \multicolumn{1}{l|}{ground truth} & Label Propagation + FG &  \multicolumn{1}{l|}{Label Propagation} & Edge Betweenness \\ 
+ \big\uparrow Average Degree  &\multicolumn{1}{l|}{ground truth} & Label Propagation + FG & \multicolumn{1}{l|}{Label Propagation} & Louvain + SG\\ 
+\hline
+ \big\downarrow Expansion  & \multicolumn{1}{l|}{ground truth} & Label Propagation + FG &\multicolumn{1}{l|}{Label Propagation} & Louvain + SG\\ 
+ \big\downarrow Cut Ratio  &  \multicolumn{1}{l|}{ground truth} & Label Propagation + FG & \multicolumn{1}{l|}{Louvain + SG + LP} & \\ 
+\hline
+ \big\downarrow Conductance  &  \multicolumn{1}{l|}{ground truth} & Label Propagation + FG & \multicolumn{1}{l|}{Label Propagation} & Lovain \\ 
+ \big\downarrow Normalized Cut & \multicolumn{1}{l|}{ground truth} & Label Propagation + FG& \multicolumn{1}{l|}{Label Propagation} & Lovain + SG\\ 
+ \big\downarrow Maximum ODF & \multicolumn{1}{l|}{ground truth} & Label Propagation + FG& \multicolumn{1}{l|}{Label Propagation} & Spin Glass\\ 
+ \big\downarrow Average ODF  & \multicolumn{1}{l|}{ground truth} & Label Propagation + FG & \multicolumn{1}{l|}{Label Propagation} & Spin-Glass \\ 
+   \hline
+\end{tabular}
+\caption{Best values for communities with ground truth}
+\label{tab:best_canonical}
+\end{table}

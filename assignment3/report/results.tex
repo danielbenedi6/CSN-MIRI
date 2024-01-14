@@ -1,0 +1,17 @@
+This section presents the results of the significance study of the closeness centrality based on the described hypotheses.
+
+Table \ref{tab:1} shows a summary of our data that we are going to use to test our hypothesis. We can observe that the different SDN have a wide range of number of nodes. There is small networks such as Basque with around 12k nodes and big networks like Czech with almost 70k nodes. All the networks are sparse, the density of edges is low. Despite its sparsity, the mean degrees are quite different with some cases around 4 and other around 13.
+
+\input{tables/t1}
+
+In order to study the importance of the network closeness centrality, we want to evaluate if this metric is significantly large with regard our random graph models (our null hypothesis). Therefore, we obtained experimentally which is the probability of the closeness centrality of the random graph to be greater than the input graph, $P(\mathcal{C}_{NH} \geq \mathcal{C}) \approx \frac{1}{T}f(\mathcal{C}_{NH} \geq \mathcal{C}) \leq \alpha$. Table \ref{tab:2} shows that our null hypothesis is correct. Our networks have a closeness centrality larger than our null hypothesis models.
+
+\input{tables/t2}
+
+Figure \ref{fig:closeness_distribution} shows the obtained results for closeness centrality computation for both models. It is clear that the performance of both studied models is very different; all results for the Binomial model lie further from the measure than those obtained with the Switching model. Other interesting characteristics are revealed by the plot; the variance of the obtained results is not the same for all languages. Observe, for instance, how Basque presents a cloud of points more spread than Catalan, both for the Binomial and Switching models. This probably can be explained by the fact that the number of edges is smaller and therefore the metric is less stable.
+\begin{figure}[!htp]
+    \centering
+    \includegraphics[width=0.5\textwidth]{figures/closeness_distribution.pdf}
+    \caption{Distribution of the closeness centrality of the different models and the input graph }
+    \label{fig:closeness_distribution}
+\end{figure}

@@ -1,0 +1,55 @@
+\subsection{Checking the validity of the metrics}
+
+In order to be considered valid, an initial validity check of the data samples was performed, so that only samples satisfying these two conditions were taken:
+
+$$4-6/n \leq \langle k^2 \rangle \leq n-1$$
+
+and
+
+$$\frac{n}{8(n-1)}\langle k^2 \rangle + \frac{1}{2} \leq \langle d \rangle \leq n-1$$
+
+\subsection{Selection of initial values for the non-linear regression models \label{subsec:initial_values}}
+
+For a certain language, the corresponding parameters for each of the models were obtained using the \verb|nls| R
+non-linear regression optimiser, for which some initial values of these parameters had to be provided. The selection of the initial values for a certain model adjustment can be really important to be able to obtain a solution or, if obtained, to obtain it faster. 
+
+As was described in the statement, to obtain good initial values for a certain model, we applied a double logarithmic transformation and then a linear regression on that transformation. This was the method followed for the "non-additive" models (1, 2, 3 and 4). However, for the "additive" models (1+, 2+, 3+ and 4+) this same approach had to be slightly modified, due to the presence of the additive term, which makes it not possible to apply linear regression on the double logarithmic transformation. 
+For that, the approach followed for these models consisted of giving an initial estimate value for the additive term ($d_0$), and then applying linear regression on the double logarithmic transformation of $f(n)-d_0$ and the rest of the model without the additive term (\textit{note that in our case $f(n) = \langle d \rangle$}).
+
+An example of the initial values acquisition process for model 2+ ($f(n)=an^b + d$) is provided here.
+
+\begin{enumerate}
+    \item Take an initial estimate for d, $d_0$. For example, $d_0 = min(\langle d \rangle) - \epsilon$.
+    \item Rewrite the model as: $f(n)-d_0=an^b$.
+    \item Apply the double logarithmic transformation: $\log(f(n)-d_0) \approx \log(an^b) = \log a + b\log n$
+    \item Apply linear regression on $\log(f(n)-d_0) \sim \log n$.
+    \item From the linear regression, we obtain $\log a$ as the intercept and $b$ as the slope of that model. Therefore, we have the initial values $a = e^{\log a}$, $b$, and $d = d_0$.
+\end{enumerate}
+
+\subsection{Homocesdasticity Assumption}
+
+The non-linear regression method is predicated on the assumption of homoscedasticity within the $\langle d \rangle$ data samples. Homoscedasity is the homogeneity of variance, which signifies uniform variances among the data samples. We can observe plotting the data samples (Appendix \ref{appendix:data_samples}) that the data do not have this property. To properly validate this assumption, a Breusch-Pagan test was performed on the linear regression model involving the variables $\langle d \rangle$ and $n$.
+
+For all languages under examination, it was established that the homoscedasticity assumption did not hold. Consequently, the values of $\langle d \rangle$ were aggregated for each number of vertices, denoted as $n$, using the R function \verb|aggregate|. With this processed data set, the non-linear regression R method \verb|nls| could be effectively employed, even in cases where the homoscedasticity assumption was not satisfied.
+
+
+\subsection{Convergence problem of model 3+}
+
+Despite using the method explained in Section \ref{subsec:initial_values}, we observed that the \verb|nls| optimiser had problems stabilising the solution which minimises the standard residual error for the languages. 
+
+In order to understand the fundamental reason of the problem, we could apply how non-linear least squares (NLS) works. NLS tries to minimise the sum of residuals, which happens when the gradient is equal to zero. To obtain the gradient, we compute the partial derivative of our sum of residuals.
+\begin{align*}
+    S &= \sum_{i=1}^m (y_i  f(x_i; a,c,d))^2  = \sum_{i=1}^m (y_i  (ae^{cx_i}+d))^2 \\
+    \nabla S &= \begin{pmatrix}
+        \frac{\partial S}{\partial a} \\
+        \frac{\partial S}{\partial c} \\
+        \frac{\partial S}{\partial d} \\
+    \end{pmatrix} \\
+    \frac{\partial S}{\partial a} &= 2 \sum_{i=1}(y_i-ae^{c_xi}-d)(-e^{cx_i})\\
+    \frac{\partial S}{\partial c} &= 2 \sum_{i=1}(y_i-ae^{c_xi}-d)(-ax_ie^{cx_i})\\
+    \frac{\partial S}{\partial d} &= 2 \sum_{i=1}(y_i-ae^{c_xi}-d)(-1)\\
+\end{align*}
+
+One could notice that the roots of our gradient are not easy to obtain and that there are many. These factors can give insight to better understand the instability of our solver and why it does not converge to a stable solution. In fact, we can observe that $d = 0$ helps converge and that is the reason why Model 3 does not have this problem.
+
+Our proposed solution uses the fact that, although it does not converge, every iteration it reduces the sum of residuals. Therefore, we will accept the last solution found as if it were optimal. We show that the solution is suboptimal with an asterisk in the legend of the figures in the appendix \ref{appendix:plots}. It is remarkable that there are some languages for which \verb|nls| was able to converge, we could not find a reasonable explanation.

@@ -1,0 +1,14 @@
+\begin{table}[ht]
+\centering
+\begin{tabular}{@{}lcc@{}}
+\toprule
+Model               & Parameters            & Initial values \\ \midrule
+Displaced Poisson   &  $\lambda$            & $\lambda = N/M$ \\
+Displaced Geometric & $q$                   & $q = N/M$ \\
+Fixed Zeta          & -                     & - \\
+Zeta                & $\gamma$              & $\gamma = 3$ \\
+Truncated Zeta      & $\gamma, k_{max}$     & $k_{max} = N$, $\gamma = 3$ \\
+Altmann             & $\gamma, \delta$      & $\gamma = 3$, $\delta = 2$ \\ \bottomrule
+\end{tabular}
+\caption{Initial values for the optimization process. The values of $M$ and $N$ refer to the sum of degree values for all nodes in the data and the number of nodes, respectively.}\label{tab:initial_degseq}
+\end{table}

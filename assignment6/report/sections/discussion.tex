@@ -1,0 +1,31 @@
+\subsection{Scaling of vertex degree}
+
+The traces of the evolution of the degree for different vertices, show that the evolution curve has the same shape independently of their arrival time. Indeed, looking at the plots from Appendix \ref{app:evolution}, we can observe that the growth function of a vertex does not depend on its arrival time.
+
+Different growth models, however, present very different scaling curves, as noted in Section \ref{sec:results}. Table \ref{tab:fitted_evol} shows the specific parameters of all fitted curves. We only consider the case for the vertex arriving at time 1, since all other curves present an identical shape once they reach the same lifespan of any other vertex.
+
+\input{tables/models_vertex_deg_evolution_fitted}
+
+Note that the mathematical expressions for each of the growth models are defined in Table \ref{tab:models_deg_evol}.
+
+Through visual comparison against the raw data, most functions seem to fit the data well, as shown in the figures of Appendix \ref{app:sca_fit}, with the fitted function (green line) almost completely overlapping the data (black line) in all cases.
+
+However, some of the results regarding which is the best model go against our intuition. It is especially the case for the \textit{No Growth + Preferential Attachment} model, whose scaling of vertex degree clearly follows a straight line. Models 0 and 0+ should be able to fit this data, and indeed, they visually do, so they should be preferred over the more complex Models 2 and 2+, when measuring the AIC. However, this is not the case and, aside from a possible mistake in our implementation which we have not been able to identify, our reasoning for this behaviour considers two possibilities:
+\begin{enumerate}
+    \item Although the data looks like a straight line, there might be some non-zero curvature that models 0 and 0+ are not able to capture, thus making their error be higher than it appears to be in plain sight.
+    \item Since the number of data points is very large, the RSS values tend to be very large (and $n$ too), and even though the logarithm is considered for the computation of the AIC, RSS could still be the dominating factor, rendering $p$ (the sole advantage of models 0 and 0+ over 2 and 2+) insignificant, and making the decision of the best model be guided by random noise in the data.
+\end{enumerate}
+
+\subsection{Degree distribution}
+
+The results of the fitted parameters can be seen in Table \ref{tab:fitted}.
+
+\input{tables/models_deg_seq_fitted}
+
+With these values, we are able to plot the probability distribution function of each probability model and compare it to the raw data.
+
+However, through a visual representation of the fitted curves, as shown in Appendix \ref{app:degseq}, one can see that the curves do not model the data well. Note that the magnitude of the error is amplified by the representation in log-log scale (otherwise it is visually imperceptible), but it still shows that there has probably been a problem in the optimization procedure.
+
+Indeed, for the \textit{Barabási-Albert} graph, one would expect to see the Zeta distribution model the data almost perfectly, since the curve with $\gamma = 3$ is visually identical to our data (and is also what the theoretical knowledge of the \textit{Barabási-Albert} model indicates). Instead, we see that it is somewhat displaced from the data and that the Zeta distribution with a variable $\gamma$ parameter does not converge to $\gamma=3$. Moreover, the geometric distribution, considered the best by AIC, is does not resemble the shape of the underlying data.
+
+The distributions for the other two models show similar problems. For the \textit{Growth + Random Attachment}, the Poisson distribution is considered best. While it does show a downwards curve, as the data, it does not visually fit the underlying distribution. The \textit{No Growth + Preferential Attachment} model has a completely different shape, that our distributions are not able to fit; we would have expected the Poisson distribution to model this shape, but it is not the case.

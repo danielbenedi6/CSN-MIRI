@@ -1,0 +1,106 @@
+\subsection{Model simulation}
+We wanted to understand the dynamic mechanics of the Barabási-Albert model. Therefore, we performed three simulations of the models to obtain its degree sequence and degree evolution over time.
+\subsubsection{Barabási-Albert Model}
+This Barbásii-Albert model is the baseline model. To simulate it, instead of fully simulating the graph, we kept a list of stubs, $S$ and when a node was added, it was chosen u.a.r from $S$ the other node. We initialised the list of stubs by iterating over all the vertices and adding one random edge with some other vertex. This is done to ensure that all the nodes appear in the stub list, otherwise it would be impossible for them to appear ever due to the preferential attachment. This allows to properly implement the preferential attachment. A sketch of our simulation can be seen in Algorithm \ref{alg:ba}.
+\begin{algorithm}[!htb]
+\caption{Barbási-Albert model}\label{alg:ba}
+\begin{algorithmic}[line numbering]
+\Require $t_{max}, n_0, m_0 \in \mathbb{N}, n_0 \geq 2$
+\For{$u \in [0,n_0)$} \Comment{Initialise randomly the graph}
+    \State $v \gets $ Choose u.a.r from $[0,n_0) \setminus \{u\}$
+    \State $S \gets S \cup \{u,v\}$
+\EndFor
+\For{$t \in [n_0,n_0+t_{max})$}
+    \State $K \gets$ Sample u.a.r $m_0$ elements from $S$ \label{alg:ba:sample}
+    \State $L \gets$ Repeat $m_0$ times $t$
+    \State $S \gets S \cup K \cup L$
+\EndFor
+\end{algorithmic}
+\end{algorithm}
+
+\subsubsection{Growth + Random Attachment}
+This model aims to eliminate the preferential attachment mechanism. We kept the random initialisation. Then, the row that samples u.a.r from the list of stubs (see line \ref{alg:ba:sample} is replaced by random samples of all the previous nodes. A sketch of our simulation can be seen in Algorithm \ref{alg:rand_attch}.
+
+\begin{algorithm}[!htb]
+\caption{Growth + Random Attachment model}\label{alg:rand_attch}
+\begin{algorithmic}[line numbering]
+\Require $t_{max}, n_0, m_0 \in \mathbb{N}, n_0 \geq 2$
+\For{$u \in [0,n_0)$} \Comment{Initialise randomly the graph}
+    \State $v \gets $ Choose u.a.r from $[0,n_0) \setminus \{u\}$
+    \State $S \gets S \cup \{u,v\}$
+\EndFor
+\For{$t \in [n_0,n_0+t_{max})$}
+    \State $K \gets$ Sample u.a.r $m_0$ elements from $[0,t)$
+    \State $L \gets$ Repeat $m_0$ times $t$
+    \State $S \gets S \cup K \cup L$
+\EndFor
+\end{algorithmic}
+\end{algorithm}
+
+\subsubsection{No Growth + Preferential Attachment}
+In this case, we remove the growth of the vertex, but retain the preferential attachment. Therefore, the initial value of $n_0$ will be the maximum number of vertices in our graph. We also initialised the graph randomly to ensure that all the vertices have at least one edge. Then, at every time step, we choose one vertex u.a.r. and some other vertices by sampling over the list of stubs. A sketch of our simulation can be seen in Algorithm \ref{alg:no_growth}.
+
+\begin{algorithm}[!htb]
+\caption{No Growth + Preferential Attachment model}\label{alg:no_growth}
+\begin{algorithmic}[line numbering]
+\Require $t_{max}, n_0, m_0 \in \mathbb{N}, n_0 \geq 2$
+\For{$u \in [0,n_0)$} \Comment{Initialise randomly the graph}
+    \State $v \gets $ Choose u.a.r from $[0,n_0) \setminus \{u\}$
+    \State $S \gets S \cup \{u,v\}$
+\EndFor
+\For{$t$ times}
+    \State $u \gets$ Choose u.a.r a vertex
+    \State $K \gets$ Sample u.a.r $m_0$ elements from $S$ \label{alg:no_growth:sample}
+    \State $L \gets$ Repeat $m_0$ times $u$
+    \State $S \gets S \cup K \cup L$
+\EndFor
+\end{algorithmic}
+\end{algorithm}
+
+\subsubsection{Experimental stability}
+Our models are generated pseudorandomly. In order to have stable results, we repeated our experiments 100 times.
+
+\subsection{Analysis of the degree distribution}
+In order to analyse the degree distribution of the different models, we will perform a maximum likelihood estimation of the different models. Maximum likelihood estimation (MLE) involves the process of determining the parameters of an assumed probability distribution based on observed data. It entails maximising a likelihood function such that, within the context of the assumed statistical model, the observed data have the highest probability.
+
+It is defined as follow:
+$$
+\mathcal{L}(\text{params} | \mathbf{x} \text{, model}) = \sum_{i=1} \log{p(x_i \text{; params})}
+$$
+
+\subsubsection{Models for degree distribution}\label{sec:mod_degseq}
+The degree distribution can be defined in many ways. One possibility is the cumulative degree distribution, but instead we chose the probability mass function. There are several possible probability-mass functions that can model the degree distribution. We chose the geometric distribution, the Poisson distribution because it is a simple approximation for the binomial distribution that characterises Erdös-Rényi graphs \cite{Newman2010}; and the Zeta distribution and some variants because they exhibit a so-called heavy tail, and the Altmann distribution (also known as Menzerath's law) \cite{Altmann1980}. A detailed description of the models used and their log-likelihood is shown in Table \ref{tab:models_deg_dist}.
+\input{tables/models_degree_sequence}
+
+Finding the values of the parameters that maximize the likelihood is an optimization process that requires some initial guess. Table \ref{tab:initial_degseq} shows the initial values for our implementation.
+
+\input{tables/models_degdist_init}
+
+In order to maximise this likelihood, we used the \verb|mle| method of the R package \verb|stats4|. We configured it to use a limited-memory Broyden-Fletcher-Goldfarb-Shannon bounded method (L-BFGS-B) \cite{Byrd1995}. We opted to use L-BFGS-B because it allowed us to establish bounds which is not possible with other methods such as BFGS, CG (more fragile than the BFGS methods), SANN (only allows one-dimensional parameters so we could not use it for Altmann) and also showed good performance.
+
+\subsubsection{Model selection}
+Once the models were fitted, we had to perform a model selection., by the Akaike information criterion (AIC)\cite{Akaike1998} with a correction for sample size:
+\begin{equation}
+    AIC_c = -2\mathcal{L} - 2K\frac{N}{N-K-1}
+\end{equation}
+
+Herein, we define $AIC_{best}$ as the minimum AIC across all models. Consequently, for each probability mass function $m$, we calculate $\Delta AIC_m = AIC_m - AIC_{best}$, to identify the model that best approximates our data. In Table \ref{tab:degseq_AIC} in Section \ref{sec:results}, we present the $\Delta AIC$ values for each probability model in each random graph model, where values closer to 0 indicate a stronger alignment with our optimal approximation.
+
+We want to emphasise that although it is known that the probability that a vertex has degree $k$ in the Barabási-Albert model is approximately defined by Equation \ref{eq:ba}\cite{Caldarelli2007}; it is not suitable for model selection because it is not warranted that the sum of all probabilities is 1.
+\begin{equation}
+    p(k) \approx \frac{2m_0^2t}{n_0+t}k^{-3} \label{eq:ba}
+\end{equation}
+
+\subsection{Analysis of the growth of vertex degree over time}\label{sec:mod_scaling}
+We want to model the evolution of the vertex degree of the vertices that arrived at time $10^n$, with $n \in [0,5]$ \footnote{Note that for the \textit{no-growth + preferential attachment} model, $n$ was limited to $[0,2]$, because our initial graph had 1k vertices, and in this model, no new vertices are added, so there is no vertex arriving at time $>1000$.}. We proposed different functions that could be used: some linear models, polynomial, exponential, and logarithmic. An ensemble of our models can be seen in Table \ref{tab:models_deg_evol}. 
+
+\input{tables/models_vertex_deg_evol}
+
+\subsubsection{Model selection}
+
+The different models have been fit on the raw data through non-linear regression. The best model has been chosen as the one with the lowest AIC. For non-linear regression models, we follow the definition of AIC from \cite{NonLinearR}, that computes it as:
+\begin{equation}
+    AIC = n \cdot 2\pi + n \cdot \log(RSS/n) + n + 2\cdot (p+1)
+\end{equation}
+
+where $n$ is the number of points in the data, $p$ the number of parameters of the model and $RSS$ the residual sum of squares of the regression fit.

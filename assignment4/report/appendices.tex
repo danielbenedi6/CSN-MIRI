@@ -1,0 +1,80 @@
+\def\Languages{
+Arabic, Basque, Catalan,
+Chinese, Czech, English,
+Greek, Hungarian, Italian,
+Turkish}
+
+\section{Graphs of all the models for each language}\label{appendix:plots}
+
+\foreach \lang in \Languages
+{
+\begin{figure}[!htb]
+    \centering
+    \includegraphics[width=0.7\textwidth]{figures/\lang_all_models.pdf}
+    \caption{All models fitted for \lang}
+\end{figure}
+}
+\pagebreak
+
+\section{The best model by AIC for each language}\label{appendix:best-model-plots}
+
+\foreach \lang in \Languages
+{
+\begin{figure}[!htb]
+    \centering
+    \includegraphics[width=0.7\textwidth]{figures/\lang_best_aic.pdf}
+    \caption{The best model for \lang}
+\end{figure}
+}
+\pagebreak
+
+\section{The best model by $s$ for each language}
+
+\foreach \lang in \Languages
+{
+\begin{figure}[!htb]
+    \centering
+    \includegraphics[width=0.7\textwidth]{figures/\lang_best_s.pdf}
+    \caption{The best model for \lang}
+\end{figure}
+}
+\pagebreak
+
+\section{Data Samples provided for each language \label{appendix:data_samples}}
+\foreach \lang in \Languages
+{
+\begin{figure}[!htb]
+    \centering
+    \includegraphics[width=0.7\textwidth]{figures/\lang_dataset.pdf}
+    \caption{Data Samples for \lang}
+\end{figure}
+}
+\pagebreak
+
+\section{Weighted Nonlinear Least Squares \label{appendix:weighted}}
+
+\foreach \lang in \Languages
+{
+\begin{figure}[!htb]
+    \centering
+    \begin{subfigure}{0.4\textwidth}
+        \includegraphics[width=\textwidth]{figures/\lang_best_aic_weighted.pdf}
+        \caption{Model with smallest AIC for \lang.}
+    \end{subfigure} \hfill
+    \begin{subfigure}{0.4\textwidth}
+        \includegraphics[width=\textwidth]{figures/\lang_best_s_weighted.pdf}
+        \caption{Models with smallest $s$ \lang.}
+    \end{subfigure}
+    \caption{Models fitted for language \lang}
+\end{figure}
+\begin{figure}[!htb]
+    \centering
+    \includegraphics[width=0.7\textwidth]{figures/\lang_all_models_weighted.pdf}
+    \caption{All models for language \lang.}
+\end{figure}
+}
+
+\input{tables/aic_weighted.tex}
+\input{tables/aic_diff_weighted.tex}
+\input{tables/res_se_weighted.tex}
+\input{tables/params_weighted.tex}

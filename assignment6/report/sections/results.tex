@@ -1,0 +1,24 @@
+
+\subsection{Scaling of vertex degree}
+
+Tables \ref{tab:BA_evolution_AIC}, \ref{tab:RA_evolution_AIC} and \ref{tab:NG_evolution_AIC} show the raw AIC values for the different functions modeling the growth of vertex degree over time. A lower value is better. Since it can be hard to infer the best model given the raw data, Tables \ref{tab:BA_evolution_diff}, \ref{tab:RA_evolution_diff} and \ref{tab:NG_evolution_diff} show the values relative to that of the best model, which will be 0.
+
+Note that further details on the functions defining each model are given in Sections \ref{sec:mod_degseq} and \ref{sec:mod_scaling}.
+
+\input{tables/evol_AIC}
+\input{tables/evol_diff}
+
+\subsection{Degree distribution}
+
+Table \ref{tab:degseq_AIC} presents the raw AIC values  of the different distributions for the three graph models under consideration. Likewise, Table \ref{tab:degseq_diff} presents the difference with respect to the best model. Note that in both tables, \textit{BA} refers to tbe \textit{Barabási-Albert} model, \textit{G+RA} to the \textit{Growth + Random Attachment} model, and \textit{NG + PA} to the \textit{No Growth + Preferential Attachment} model.
+
+\input{tables/degseq_AIC}
+
+
+\subsection{Conclusion}
+
+The results show that Model 2+ is the most suited to represent the scaling of vertex degree with the \textit{Barabási-Albert} model and the \textit{No Growth + Preferential Attachment}, while Model 4+ is the best fit for the \textit{Growth + Random Attachment}.
+
+Regarding the degree distribution, Altmann is the best for the first and third cases, while the second graph model has a degree distribution that could be best modeled with a Poisson function.
+
+Note, however, that we think these values are not correct and are a result of a mistake in our code that we have not been able to fix. We give more details on this in the next section.

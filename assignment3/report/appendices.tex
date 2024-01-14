@@ -1,0 +1,28 @@
+
+Since syntactic dependencies are always trees \cite{i2004patterns}, we believe that the switching method should increase the centrality closeness. Although syntactic dependencies are trees, the collection does not have to bee, in fact none of the inputs are trees they contain loops. This is motivated by the fact that a tree does not contain any closed path, but our implementation of switching model does not warranty this property. Therefore, with high probability, it will introduce any closed path. The existence of closed paths provokes that the distances in the graph get reduced, and by the definition of the closeness centrality $\mathcal{C} = \frac{1}{N}\sum_{i=1}^N\frac{1}{N-1}\sum_{j \neq i}\frac{1}{d_{i,j}}$ it will increase.
+
+\subsection{Intuition}
+This fact can be observed in the following example. Given a tree, we can compute its centrality closeness:
+\input{figures/Graph1.tikz}
+
+Assuming that our switching model selects the edges $(A,B)$ and $(C,D)$ to switch into $(A,D),(B,C)$. Then we get the following graph and centrality closeness:
+
+\input{figures/Graph2.tikz}
+
+It is clear that in this example, the switching model does not keep the tree property by introducing a closed path which has reduced the distance between vertices and therefore has increased the closeness centrality.
+
+\subsection{Formal proof}
+A tree is a graph with $n$ nodes and $n-1$ edges. Since the Switching mdoel only swaps already existing edges, both the number of nodes $n$ and  edges $n-1$ is fixed. We w.t.s. that the probability that we still have a tree after a number of iterations tends to 0 as the number of iterations tends o $\infty$.
+
+By the definition of our edge swapping, we define the probability of creating a cycle after one iteration where we start with a tree graph as the probability of choosing two edges u.a.r that share a vertex.
+\begin{itemize}
+    \item The number of ways to choose one vertex from $n$ vertices is $n$.
+    \item Once we have a fixed vertex, the number of ways to choose two edges that connect to that vertex is C(degree of the chosen vertex, 2). In a tree, the degree of any vertex is at most $n-1$ (it can have at most $n-1$ edges connected to it, that would be a star graph).
+    \item We perform the switching depending on the outcome of flipping a coin
+\end{itemize}
+\begin{equation*}
+    p(n)_T = {n \choose 1} {n-1 \choose 2} \dfrac{1}{2}= n(n-1)(n-2)\dfrac{1}{2} = \mathcal{O}(n^3)
+\end{equation*}
+
+Then, the probability of having an edge increases both by repetitions and as $n$ grows.\\
+Containing a cycle increases the degree of a vertex, and vertex with degree 0 are not considered for the closeness centrality computation. Therefore, containing a cycle introduces a positive drift to the closeness centrality measure, we expect to obtain higher values.

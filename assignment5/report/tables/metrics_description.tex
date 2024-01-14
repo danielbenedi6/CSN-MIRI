@@ -1,0 +1,23 @@
+
+\begin{table}[ht]
+\centering
+\begin{tabular}{ll}
+    \toprule
+    \textbf{Metric} & \textbf{computation method} ($N$) \\
+    \midrule
+    \big\uparrow Internal Density & $\frac{m_s}{n_s(n_s -1)/2}$ \\
+    \big\uparrow Edges Inside & $m_s$ \\
+    \big\uparrow Average Degree & $\frac{2m_s}{n_s}$ \\
+    \midrule
+    \big\downarrow Expansion & $\frac{c_s}{n_s}$ \\
+    \big\downarrow Cut Ratio & $\frac{c_s}{n_s(n-n_s)}$ \\
+    \midrule
+    \big\downarrow Conductance & $\frac{c_s}{2m_s +c_s}$ \\
+    \big\downarrow Normalized Cut & $\frac{c_s}{2m_s +c_s} + \frac{c_s}{2(m-m_s) + c_s}$ \\
+    \big\downarrow Maximum ODF & $\max_u\in S \frac{|\{(u,v) \in E: v\notin S\}|}{d(u)}$ \\
+    \big\downarrow Average ODF &  $\frac{1}{n_s}\sum_u\in S \frac{|\{(u,v) \in E: v\notin S\}|}{d(u)}$ \\
+   \bottomrule
+\end{tabular}
+\caption{Metrics for evaluating the quality of a clustering}
+\label{tab:metrics}
+\end{table}

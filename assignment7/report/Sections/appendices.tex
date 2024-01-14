@@ -1,0 +1,150 @@
+\section{All models with $\gamma = 0.3$ and $\beta = 0.4$ \label{Appendix:AllNetworks}}
+\def\ListP{
+0.10,
+0.25,
+0.50,
+0.75,
+0.90}
+
+\foreach \Percent in \ListP
+{
+\begin{figure}[H]
+    \centering
+    \includegraphics[width=0.55\textwidth]{img/AllNetworks_\Percent.pdf}
+    \caption{All networks with an initial infected population of \Percent}
+\end{figure}
+}
+
+\pagebreak
+
+\section{Boxplot of leading eigenvalues on different networks, \label{Appendix:Eigens}}
+
+\def\Networks{
+BarabasiAlbert,
+ErdosRenyi,
+SmallWorld,
+Tree}
+
+\begin{figure}[H]
+\centering
+\foreach \network in \Networks
+{
+    \begin{subfigure}{.45\textwidth}
+      \centering
+      \vstretch{\imgHeight}{\includegraphics[width=\linewidth]{img/\network Eigenvalues.pdf}}
+    \vspace*{-7mm}
+    \end{subfigure}
+}
+\end{figure}
+
+\pagebreak
+
+\def\ListGamma{
+0.15,
+0.3,
+0.45,
+0.6,
+0.75,
+0.9}
+\def\Types{
+Above,
+Below}
+
+\section{Erdös-Renyi Plots \label{Appendix:ErdosRenyi}}
+\foreach \type in \Types
+{
+\begin{figure}[H]
+\centering
+\foreach \lGamma in \ListGamma
+{
+\begin{subfigure}{.45\textwidth}
+  \centering
+  \vstretch{\imgHeight}{\includegraphics[width=\linewidth]{img/ErdosRenyiConvergence_\type_\lGamma.pdf}}
+\vspace*{-7mm}
+  \caption{$\gamma$=\lGamma}
+\end{subfigure}
+}
+    \caption{\type \ the threshold}
+\end{figure}
+}
+
+
+\section{Barabási-Albert Plots \label{Appendix:BarabasiAlbert}}
+
+\foreach \type in \Types
+{
+\begin{figure}[H]
+\centering
+\foreach \lGamma in \ListGamma
+{
+\begin{subfigure}{.45\textwidth}
+  \centering
+  \vstretch{\imgHeight}{\includegraphics[width=\linewidth]{img/BarabasiAlbertConvergence_\type_\lGamma.pdf}}
+\vspace*{-7mm}
+  \caption{$\gamma$=\lGamma}
+\end{subfigure}
+}
+    \caption{\type \ the threshold}
+\end{figure}
+}
+
+
+\section{Small-World Plots \label{Appendix:SmallWorld}}
+
+\foreach \type in \Types
+{
+\begin{figure}[H]
+\centering
+\foreach \lGamma in \ListGamma
+{
+\begin{subfigure}{.45\textwidth}
+  \centering
+  \vstretch{\imgHeight}{\includegraphics[width=\linewidth]{img/SmallWorldConvergence_\type_\lGamma.pdf}}
+\vspace*{-7mm}
+  \caption{$\gamma$=\lGamma}
+\end{subfigure}
+}
+    \caption{\type \ the threshold}
+\end{figure}
+}
+
+
+\section{Star Plots \label{Appendix:Star}}
+
+\foreach \type in \Types
+{
+\begin{figure}[H]
+\centering
+\foreach \lGamma in \ListGamma
+{
+\begin{subfigure}{.45\textwidth}
+  \centering
+  \vstretch{\imgHeight}{\includegraphics[width=\linewidth]{img/StarConvergence_\type_\lGamma.pdf}}
+\vspace*{-7mm}
+  \caption{$\gamma$=\lGamma}
+\end{subfigure}
+}
+    \caption{\type \ the threshold}
+\end{figure}
+}
+
+
+
+\section{Tree Plots \label{Appendix:Tree}}
+
+\foreach \type in \Types
+{
+\begin{figure}[H]
+\centering
+\foreach \lGamma in \ListGamma
+{
+\begin{subfigure}{.45\textwidth}
+  \centering
+  \vstretch{\imgHeight}{\includegraphics[width=\linewidth]{img/TreeConvergence_\type_\lGamma.pdf}}
+\vspace*{-7mm}
+  \caption{$\gamma$=\lGamma}
+\end{subfigure}
+}
+    \caption{\type \ the threshold}
+\end{figure}
+}

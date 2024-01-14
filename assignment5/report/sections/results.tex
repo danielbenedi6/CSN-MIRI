@@ -1,0 +1,11 @@
+Tables \ref{tab:sig_karate}, \ref{tab:sig_barabasi_albert},  \ref{tab:sig_enron} and \ref{tab:sig_dblp} show the significance metrics computed for the different networks using \verb|evaluate_significance| provided by the \verb|clusterAnalytics| R package. Tables \ref{tab:best_canonical} and \ref{tab:best_no_canonical} highlight which clustering algorithm performs best according to the different metrics. As can be seen, the best algorithm is highly dependent on the network itself.
+
+Surprisingly, the known canonical clustering does not seem to outperform the best clustering algorithm in terms of the metrics considered for Barabási-Albert blocks.
+
+Table \ref{tab:jaccard} shows the global Jaccard indices for each of the networks and algorithms. In case a canonical clustering was known, it was used as the baseline. For the Enron network, we compared the algorithms to clustering produced by the Label Propagation algorithm. In the case of DBLP we used Louvain as a benchmark. Note that the clustering algorithms use randomness in their decisions, so two computations of the same algorithm produced two different clusterings, which in turn lead to a Jaccard index lower than 1 for Louvain.
+
+
+\input{tables/best_cluster_canonical}
+\input{tables/best_cluster_no_canonical}
+\input{tables/evaluations}
+\input{tables/summary}

@@ -1,0 +1,81 @@
+\documentclass{article}
+\usepackage{graphicx} % Required for inserting images
+\usepackage{float}
+\usepackage{color}
+\usepackage{hyperref}
+\usepackage{multicol}
+\usepackage{scalerel}
+\usepackage[
+	citestyle=ieee, 
+    bibstyle=ieee,
+    style=numeric-comp,
+    sorting=nty,
+    maxbibnames=99, % Make sure we are printing all authors in the appendix
+]{biblatex}
+\addbibresource{references.bib}
+
+\usepackage{booktabs}
+\usepackage{anysize}
+\usepackage{caption}
+\usepackage[toc,page]{appendix}
+\usepackage{subcaption}
+\usepackage{fancyhdr}
+\usepackage{amssymb}
+\usepackage{amsmath}
+\usepackage{pgffor} % Allows using foreach
+
+\pagestyle{plain}
+\oddsidemargin  -5mm
+\evensidemargin -5mm
+\topmargin      -5mm
+\textwidth      170mm
+\textheight     225mm
+\parskip    1.5ex
+\parindent   0cm
+\footskip 15mm
+\usepackage{datetime}
+\usepackage{bm}
+\pagestyle{fancy}
+\fancyhf{}
+
+\chead{CSN \hfill Lab Session 7 –Simulation of SIS model over networks \hfill Daniel Benedí Garcia \& Dídac Martínez Bachs}
+\setlength{\headheight}{13.07225pt}
+\newcommand{\imgHeight}{1.2}
+
+\newcommand{\param}[1]{\ensuremath{\vec{\bm{#1}}}}
+
+\newdateformat{monthyeardate}{%
+  \monthname[\THEMONTH], \THEYEAR}
+
+\title{Complex and Social Networks \\ Assignment 7 - Simulation of SIS model over networks}
+\author{Daniel Benedí Garcia \\ Dídac Martínez Bachs}
+\date{\monthyeardate\today}
+
+%\title{LAB7}
+%\author{Daniel Benedí Garcia \& Dídac Martínez Bachs}
+%\date{December 2023}
+\begin{document}
+
+%\maketitle
+\begin{multicols}{2}
+\tableofcontents
+\end{multicols}
+\hrule
+\section{Introduction}
+\input{Sections/intro}
+
+\section{First Exercise}
+\input{Sections/First Exercise}
+
+\section{Second Exercise}
+\input{Sections/Second Exercise}
+
+\printbibliography
+
+\pagebreak
+\appendix
+\input{Sections/appendices}
+
+
+
+\end{document}
